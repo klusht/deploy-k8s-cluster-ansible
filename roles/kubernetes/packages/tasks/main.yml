@@ -1,0 +1,57 @@
+---
+
+- name: Add Kubernetes repository
+  yum_repository:
+    name: Kubernetes
+    description: Kubernetes Repository
+    file: kubernetes
+    baseurl: http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+    enabled: yes
+    gpgcheck: no
+
+- name: Install kubernetes packages
+  yum:
+    name: ['kubelet', 'kubeadm', 'kubectl']
+    update_cache: yes
+    state: present
+
+- name: Disable SELinux
+  selinux:
+    state: disabled
+
+- name: TODO add link why remove swap
+  shell: "swapoff -a"
+
+- name: Remove fstab swap
+  mount:
+    path: swap
+    fstype: swap
+    opts: noatime
+    state: absent
+
+- name: Copy kubeadm conf to drop-in directory
+  template:
+    src: 20-kubelet-extra-args.conf.j2
+    dest: /etc/systemd/system/kubelet.service.d/20-extra-args.conf
+
+
+- name: CentOS7 have issues with traffic fix conf file
+  file:
+    path: "/etc/sysctl.d/k8s.conf"
+    state: touch
+
+- name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: "{{ item }}"
+    state: present
+  with_items:
+  - "net.bridge.bridge-nf-call-ip6tables = 1"
+  - "net.bridge.bridge-nf-call-iptables = 1"
+- shell: "sysctl --system"
+
+- name: Reload kubelet daemon
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    enabled: yes

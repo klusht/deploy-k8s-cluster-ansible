@@ -1,0 +1,70 @@
+#!/usr/bin/env ansible-playbook
+---
+
+- hosts: localhost
+  connection: local
+  vars:
+    ansible_user_access_key_path: "{{ lookup('env','HOME') }}/.ssh/id_rsa_ansible"
+    ansible_user_access_password: "CHAMGE_ME"
+    ansible_python_interpreter: "./venv/bin/python"
+    vm_ips: []
+
+  tasks:
+  - name: Check if ansible key is available
+    stat:
+      path: "{{ ansible_user_access_key_path }}"
+    register: ansible_key
+
+  - name: Generate ansible keys to access VM's
+    when: ansible_key.stat.exists == False
+    shell: "ssh-keygen -t rsa -b 4096 -N '' -C ansible -f {{ ansible_user_access_key_path }}"
+
+  - name: Collect k8s master IP in vm_ips
+    set_fact:
+      vm_ips: "{{ vm_ips }} + [ '{{ groups['k8s-master'][0] }}' ] "
+
+  - name: Append k8s Nodes IPs
+    set_fact:
+      vm_ips: "{{ vm_ips }} + [ '{{ item }}' ]"
+    with_items:
+    - "{{ groups['k8s-node'] }}"
+
+  - name: Deploy ansible user access key to VM's
+    when: ansible_key.stat.exists == False
+    expect:
+      command: "ssh-copy-id -f -i {{ ansible_user_access_key_path }}.pub ansible@{{ item }} -o StrictHostKeyChecking=no"
+      responses:
+        '.*password:': "{{ ansible_user_access_password }}"
+      echo: yes
+    with_items:
+      - "{{ vm_ips }}"
+
+- hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+  - name: Add ip entries and host names in local /etc/hosts file. This assumes that your user has sudo rights.
+    include_role:
+      role: common/hosts_entries
+
+- hosts: k8s-master
+  become: yes
+  roles:
+  - { role: kubernetes/master }
+
+- hosts: k8s-node
+  become: yes
+  roles:
+  - { role: kubernetes/node }
+
+- hosts: k8s-master
+  become: yes
+  vars:
+    ansible_ssh_private_key_file: "{{ lookup('env','HOME') }}/.ssh/id_rsa_ansible"
+  tasks:
+  - name: Label nodes as workers
+    environment:
+      KUBECONFIG: "/etc/kubernetes/admin.conf"
+    shell: "kubectl label node k8s-node-{{ item[1][item[1].rfind('.')+1:] }} node-role.kubernetes.io/worker=worker"
+    with_indexed_items:
+    - "{{ groups['k8s-node'] }}"

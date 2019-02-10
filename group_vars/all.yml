@@ -1,0 +1,7 @@
+service_cidr: "10.100.0.0/12"
+
+pod_network: flannel
+#pod_network: calico
+
+calico_pod_network_cidr: "10.200.0.0/16"
+flannel_pod_network_cidr: "10.244.0.0/16"

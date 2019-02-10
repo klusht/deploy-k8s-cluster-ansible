@@ -1,0 +1,33 @@
+---
+- name: Change node hostname with the last segment of the node IP's
+  hostname:
+    name: "k8s-node-{{ inventory_hostname[inventory_hostname.rfind('.')+1:] }}"
+
+- include_role:
+    name: common/hosts_entries
+
+- include_role:
+    name: docker
+
+- include_role:
+    name:  kubernetes/packages
+
+- name: Open ports
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  with_items:
+  - 10250 # kubelet API
+  - 30000-32767    # Node POD service
+
+- name: Reload firewall
+  shell: "firewall-cmd --reload"
+
+- name: Reset kubeadm on the node as well
+  shell: "kubeadm reset --force"
+  register: reset_cluster
+
+- name: Worker join cluster
+  include_tasks: join_cluster.yml
+

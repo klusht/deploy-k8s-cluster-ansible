@@ -41,7 +41,7 @@ alias venv='. venv/bin/activate'      >> recomended alias to easy activate the v
 ```
 ##### Kubernetes configuration 
 - update group_vars/all.yml with the required service_cidr and the pod network of choice
-- 
+ 
 
 #### Script assumption
 - it mostly fallows the steps defined in the official guides 
@@ -49,5 +49,6 @@ alias venv='. venv/bin/activate'      >> recomended alias to easy activate the v
   - https://kubernetes.io/docs/setup/independent/install-kubeadm/
   - https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
 - it will always install the latest docker version on all nodes. This might be an issue and you will see some warnings from kubeadm
-- it uses /etc/hosts for DNS resolution. The nodes DN contains the last IP segment as present in the hosts.ini
+- it uses /etc/hosts for DNS resolution. The nodes DN contains the last IP segment as present in the hosts.ini. 
+-- To avoid collisions please make sure the last IP segments on nodes are unique
 

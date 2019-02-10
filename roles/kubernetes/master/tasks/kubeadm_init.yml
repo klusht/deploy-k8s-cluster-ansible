@@ -1,0 +1,92 @@
+---
+
+- name: Reset Kubernetes master
+  shell: "kubeadm reset --force"
+  register: reset_cluster
+
+- name: Init Kubernetes cluster using calico pod network
+  when: reset_cluster is succeeded and pod_network=='calico'
+  shell: |
+    kubeadm init --service-cidr {{ service_cidr }} \
+                 --pod-network-cidr {{ calico_pod_network_cidr }} \
+                 --apiserver-advertise-address {{ groups['k8s-master'][0] }} \
+                 >  /tmp/kubeadm_init.log
+
+
+- name: Init Kubernetes cluster using flannel pod networl
+  when: reset_cluster is succeeded and pod_network=='flannel'
+  shell: |
+    kubeadm init --service-cidr {{ service_cidr }} \
+                 --pod-network-cidr {{ flannel_pod_network_cidr }} \
+                 --apiserver-advertise-address {{ groups['k8s-master'][0] }} \
+                 >  /tmp/kubeadm_init.log
+
+
+
+- name: Install Calico network kdd
+  when: pod_network=='calico'
+  command: "kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  register: calico_kdd
+- debug: var=calico_kdd.stdout_lines
+
+- name: Get calico yaml for update
+  when: pod_network=='calico'
+  get_url:
+    url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+    dest: /tmp/calico.yaml
+    force: yes
+
+- name: Update config with local defined IP range
+  when: pod_network=='calico'
+  lineinfile:
+    path: /tmp/calico.yaml
+    regexp: '^              value: "192.168.0.0/16"'
+    line: '              value: "{{ calico_pod_network_cidr }}"'
+
+- name: Apply Calico yaml
+  when: pod_network=='calico'
+  command: "kubectl apply -f /tmp/calico.yaml"
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  register: calico_yaml
+- debug: var=calico_yaml.stdout_lines
+
+
+
+- name: Bridged IPv4 traffic to iptables’ chains. This is a requirement for some CNI plugins to work
+  when: pod_network=='flannel'
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+    state: present
+
+- name: Install Calico network kdd
+  when: pod_network=='flannel'
+  command: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml"
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  register: flannel_out
+- debug: var=flannel_out.stdout_lines
+
+
+
+
+
+- name: Copy kubeadm init logs to local env for extraction
+  fetch:
+    src: /tmp/kubeadm_init.log
+    dest: generated_resources/kubeadm_init.log
+    flat: yes
+
+- name: Copy kubectl config
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: generated_resources/config
+    flat: yes
+
+- name: Extract token and sha script
+  local_action: script utils/extract_kubeadm_init_data.py generated_resources/kubeadm_init.log
+  register: extract_script
+- debug: var=extract_script

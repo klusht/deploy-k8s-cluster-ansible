@@ -1,0 +1,11 @@
+---
+
+- name: Include generated kubeadm join line
+  include_vars:
+    dir: "{{ playbook_dir }}/generated_resources"
+    files_matching: generated_vars.yml
+
+- name: execute join command
+  shell: "{{ join_line }}"
+  register: join_cluster
+- debug: var=join_cluster

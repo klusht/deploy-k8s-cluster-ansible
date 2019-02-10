@@ -1,0 +1,23 @@
+---
+
+- name: Get local docker installation
+  shell: "docker version | awk 'FNR == 2 { print $2 }'"
+  register: get_docker_version
+- set_fact:
+    docker_local_version: " {{ get_docker_version.stdout_lines }} "
+
+- name: Get latest docker ce stable release
+  shell: "curl --silent 'https://api.github.com/repos/docker/docker-ce/releases/latest' | gawk 'match($0, /\"name\": \"(.*)\",/, a) {print a[1]}'"
+  args:
+    warn: false
+  register: get_docker_lastest_version
+- set_fact:
+    gather_facts: no
+    docker_latest_version: " {{ get_docker_lastest_version.stdout_lines }} "
+
+- name: Install Docker container if latest is not installed
+  when: docker_local_version != docker_latest_version
+  include_tasks: install_docker_latest.yml
+
+
+

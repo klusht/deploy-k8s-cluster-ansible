@@ -1,0 +1,32 @@
+---
+
+- name: Set VM host name to k8s-master
+  hostname:
+    name: k8s-master
+
+- include_role:
+    name: common/hosts_entries
+
+- include_role:
+    name: docker
+
+- include_role:
+    name:  kubernetes/packages
+
+- name: Open ports
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  with_items:
+    - 2379-2380 # etcd server
+    - 6443      # kube API
+    - 10250     # kube API
+    - 10251     # scheduler
+    - 10252     # controller manager
+
+- name: Reload firewall
+  shell: "firewall-cmd --reload"
+
+- name: Initialize kubeadm
+  include_tasks: kubeadm_init.yml

@@ -1,0 +1,48 @@
+  - name: Make sure docker is stoped
+    systemd:
+      name: docker
+      state: stopped
+    ignore_errors: yes
+
+  - name: Uninstall docker engine old
+    when: ansible_os_family == "RedHat"
+    yum:
+      name: "{{ item }}"
+      state: absent
+    with_items:
+    - docker
+    - docker-client
+    - docker-client-latest
+    - docker-common
+    - docker-latest
+    - docker-latest-logrotate
+    - docker-logrotate
+    - docker-selinux
+    - docker-engine-selinux
+    - docker-engine
+
+  - name: install docker utils
+    when: ansible_os_family == "RedHat"
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+
+  - name: add docker repository
+    when: ansible_os_family == "RedHat"
+    shell: "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+
+  - name: Install docker engine (RHEL/CentOS)
+    when: ansible_os_family == "RedHat"
+    yum:
+      name: "docker-ce"
+      state: present
+
+  - name: reload service docker
+    systemd:
+      name: docker
+      state: reloaded
+      enabled: yes
