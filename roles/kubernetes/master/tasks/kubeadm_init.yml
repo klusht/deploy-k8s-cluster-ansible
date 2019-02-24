@@ -9,7 +9,7 @@
   shell: |
     kubeadm init --service-cidr {{ service_cidr }} \
                  --pod-network-cidr {{ calico_pod_network_cidr }} \
-                 --apiserver-advertise-address {{ groups['k8s-master'][0] }} \
+                 --apiserver-advertise-address 0.0.0.0 \
                  >  /tmp/kubeadm_init.log
 
 
@@ -18,7 +18,7 @@
   shell: |
     kubeadm init --service-cidr {{ service_cidr }} \
                  --pod-network-cidr {{ flannel_pod_network_cidr }} \
-                 --apiserver-advertise-address {{ groups['k8s-master'][0] }} \
+                 --apiserver-advertise-address 0.0.0.0 \
                  >  /tmp/kubeadm_init.log
 
 
@@ -52,8 +52,6 @@
     KUBECONFIG: "/etc/kubernetes/admin.conf"
   register: calico_yaml
 - debug: var=calico_yaml.stdout_lines
-
-
 
 - name: Bridged IPv4 traffic to iptables’ chains. This is a requirement for some CNI plugins to work
   when: pod_network=='flannel'

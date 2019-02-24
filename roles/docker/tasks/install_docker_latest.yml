@@ -5,43 +5,35 @@
     ignore_errors: yes
 
   - name: Uninstall docker engine old
-    when: ansible_os_family == "RedHat"
     yum:
-      name: "{{ item }}"
+      name: [
+        'docker',
+        'docker-client',
+        'docker-client-latest',
+        'docker-common',
+        'docker-latest',
+        'docker-latest-logrotate',
+        'docker-logrotate',
+        'docker-selinux',
+        'docker-engine-selinux',
+        'docker-ce-cli',
+        'docker-engine']
       state: absent
-    with_items:
-    - docker
-    - docker-client
-    - docker-client-latest
-    - docker-common
-    - docker-latest
-    - docker-latest-logrotate
-    - docker-logrotate
-    - docker-selinux
-    - docker-engine-selinux
-    - docker-engine
 
-  - name: install docker utils
-    when: ansible_os_family == "RedHat"
+  - name: Install docker utils
     yum:
-      name: "{{ item }}"
+      name: ['yum-utils', 'device-mapper-persistent-data', 'lvm2']
       state: present
-    with_items:
-    - yum-utils
-    - device-mapper-persistent-data
-    - lvm2
 
-  - name: add docker repository
-    when: ansible_os_family == "RedHat"
+  - name: Add docker repository
     shell: "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
 
   - name: Install docker engine (RHEL/CentOS)
-    when: ansible_os_family == "RedHat"
     yum:
-      name: "docker-ce"
+      name: "docker-ce-{{ docker_latest_version.replace('-', '.') }}-3.el7"
       state: present
 
-  - name: reload service docker
+  - name: Reload service docker
     systemd:
       name: docker
       state: reloaded
