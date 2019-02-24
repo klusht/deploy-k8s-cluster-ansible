@@ -1,3 +1,5 @@
+group_vars_all_ansible_key: "{{ lookup('env','HOME') }}/.ssh/id_rsa_ansible"
+
 service_cidr: "10.100.0.0/12"
 
 pod_network: flannel

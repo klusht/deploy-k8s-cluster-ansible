@@ -1,0 +1,54 @@
+#!/usr/bin/env ansible-playbook
+# as this playbook is required to create and deploy the ansible user. we need to connect with root and using password.
+# This command will print many deprication messages from the paramiko ssh connector. This connector has been choosen to skip installing python packages on geusts VM's
+# ./optional-configure-ansible-remote.yaml  --ask-pass -c paramiko   <<<< run using this command
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "./venv/bin/python"
+  tasks:
+    - name: Check if ansible key is available
+      stat:
+        path: "{{ group_vars_all_ansible_key }}"
+      register: ansible_key
+
+    - name: Generate ansible keys to access VM's
+      when: ansible_key.stat.exists == False
+      shell: "ssh-keygen -t rsa -b 4096 -N '' -C ansible -f {{ group_vars_all_ansible_key }}"
+
+- hosts: all
+  vars:
+    ansible_user: root
+    ansible_user_access_password: \
+  tasks:
+  - name: Make wheel group
+    group:
+      name: wheel
+      state: present
+
+  - name: Allow 'wheel' group to have passwordless sudo
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%wheel'
+      line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+
+  - name: Add the user ansible
+    user:
+      name: ansible
+      comment: Configuration manager
+      group: wheel
+
+  - name: Set up authorized keys for the deployer user
+    authorized_key:
+      user: ansible
+      key: "{{ lookup('file', '{{ group_vars_all_ansible_key }}.pub') }}"
+
+
+#  - name: Remove ssh password authentication
+#    replace:
+#      path: /etc/ssh/sshd_config
+#      regexp: 'PasswordAuthentication yes'
+#      replace: 'PasswordAuthentication no'

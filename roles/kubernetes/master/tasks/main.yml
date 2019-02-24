@@ -1,11 +1,13 @@
 ---
+# uncomment if you don't have a DNS on your private network and wish to use /etc/hosts for domain resolve
+# this assumes that your hosts.ini contains IP's only. The script will define some domain names for each node
+#- include_role:
+#    name: common/hosts_entries
 
 - name: Set VM host name to k8s-master
   hostname:
-    name: k8s-master
-
-- include_role:
-    name: common/hosts_entries
+    name: "{{ ansible_host }}"
+#    name: k8s-master   # to be used if hosts_entries is used
 
 - include_role:
     name: docker

@@ -1,33 +1,46 @@
 ---
+# uncomment if you don't have a DNS on your private network and wish to use /etc/hosts for domain resolve
+# this assumes that your hosts.ini contains IP's only. The script will define some domain names for each node
+#- include_role:
+#    name: common/hosts_entries
+
 - name: Change node hostname with the last segment of the node IP's
   hostname:
-    name: "k8s-node-{{ inventory_hostname[inventory_hostname.rfind('.')+1:] }}"
+    name: "{{ ansible_host }}"
+#    name: "k8s-node-{{ inventory_hostname[inventory_hostname.rfind('.')+1:] }}"   # to be used if hosts_entries is used
 
-- include_role:
-    name: common/hosts_entries
+- name: Check if node has kubelet daemon running
+  command: systemctl status kubelet
+  register: kubectl_service_status
+  ignore_errors: yes
+- set_fact:
+    is_kubelet_not_running: "{{ kubectl_service_status.stdout.find('active') == -1 }}"
 
-- include_role:
+- name: Install docker on node
+  when: is_kubelet_not_running|bool
+  include_role:
     name: docker
 
-- include_role:
+- name: Install kubernetes packages
+  when: is_kubelet_not_running|bool
+  include_role:
     name:  kubernetes/packages
 
 - name: Open ports
+  when: is_kubelet_not_running|bool
   firewalld:
     port: "{{ item }}/tcp"
     permanent: true
     state: enabled
   with_items:
-  - 10250 # kubelet API
+  - 10250          # kubelet API
   - 30000-32767    # Node POD service
 
 - name: Reload firewall
+  when: is_kubelet_not_running|bool
   shell: "firewall-cmd --reload"
 
-- name: Reset kubeadm on the node as well
-  shell: "kubeadm reset --force"
-  register: reset_cluster
-
 - name: Worker join cluster
+  when: is_kubelet_not_running|bool
   include_tasks: join_cluster.yml
 

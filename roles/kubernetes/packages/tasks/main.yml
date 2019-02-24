@@ -1,5 +1,4 @@
 ---
-
 - name: Add Kubernetes repository
   yum_repository:
     name: Kubernetes
@@ -19,7 +18,7 @@
   selinux:
     state: disabled
 
-- name: TODO add link why remove swap
+- name: ERROR Swap running with swap on is not supported
   shell: "swapoff -a"
 
 - name: Remove fstab swap
@@ -33,7 +32,6 @@
   template:
     src: 20-kubelet-extra-args.conf.j2
     dest: /etc/systemd/system/kubelet.service.d/20-extra-args.conf
-
 
 - name: CentOS7 have issues with traffic fix conf file
   file:
