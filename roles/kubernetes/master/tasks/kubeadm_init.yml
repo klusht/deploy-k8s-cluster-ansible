@@ -21,20 +21,10 @@
                  --apiserver-advertise-address 0.0.0.0 \
                  >  /tmp/kubeadm_init.log
 
-
-
-- name: Install Calico network kdd
-  when: pod_network=='calico'
-  command: "kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml"
-  environment:
-    KUBECONFIG: "/etc/kubernetes/admin.conf"
-  register: calico_kdd
-- debug: var=calico_kdd.stdout_lines
-
-- name: Get calico yaml for update
+- name: Get calico yaml to update the default 192.168.0.0 cidr
   when: pod_network=='calico'
   get_url:
-    url: https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+    url: "{{ calico_version_yaml }}"
     dest: /tmp/calico.yaml
     force: yes
 
@@ -60,7 +50,7 @@
     value: 1
     state: present
 
-- name: Install Calico network kdd
+- name: Install Flannel network kdd
   when: pod_network=='flannel'
   command: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml"
   environment:
@@ -68,23 +58,13 @@
   register: flannel_out
 - debug: var=flannel_out.stdout_lines
 
+- name: Remove taint from master to schedule pods on it
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  command: "kubectl taint nodes --all node-role.kubernetes.io/master-"
+  register: schedule_pods_master
+- debug: var=schedule_pods_master.stdout_lines
 
 
 
 
-- name: Copy kubeadm init logs to local env for extraction
-  fetch:
-    src: /tmp/kubeadm_init.log
-    dest: generated_resources/kubeadm_init.log
-    flat: yes
-
-- name: Copy kubectl config
-  fetch:
-    src: /etc/kubernetes/admin.conf
-    dest: generated_resources/config
-    flat: yes
-
-- name: Extract token and sha script
-  local_action: script utils/extract_kubeadm_init_data.py generated_resources/kubeadm_init.log
-  register: extract_script
-- debug: var=extract_script

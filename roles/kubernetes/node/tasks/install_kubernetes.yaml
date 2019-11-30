@@ -1,0 +1,22 @@
+- name: Install docker on node
+  include_role:
+    name: docker
+
+- name: Install kubernetes packages
+  include_role:
+    name:  kubernetes/packages
+
+- name: Open ports
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  with_items:
+    - 10250          # kubelet API
+    - 30000-32767    # Node POD service
+
+- name: Reload firewall
+  shell: "firewall-cmd --reload"
+
+- name: Worker join cluster
+  include_tasks: join_cluster.yml

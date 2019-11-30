@@ -1,4 +1,0 @@
-yolk3k==0.9      # usage yolk -V dnspython
-ansible==2.7.7
-pexpect==4.6
-dnspython==1.16.0

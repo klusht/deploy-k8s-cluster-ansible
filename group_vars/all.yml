@@ -1,9 +1,9 @@
-group_vars_all_ansible_key: "{{ lookup('env','HOME') }}/.ssh/id_rsa_ansible"
-
 service_cidr: "10.100.0.0/12"
 
-pod_network: flannel
-#pod_network: calico
+#pod_network: flannel
+pod_network: calico
 
 calico_pod_network_cidr: "10.200.0.0/16"
+calico_version_yaml: https://docs.projectcalico.org/v3.10/manifests/calico.yaml
+
 flannel_pod_network_cidr: "10.244.0.0/16"

@@ -1,19 +1,12 @@
 ---
-# uncomment if you don't have a DNS on your private network and wish to use /etc/hosts for domain resolve
-# this assumes that your hosts.ini contains IP's only. The script will define some domain names for each node
-#- include_role:
-#    name: common/hosts_entries
-
-- name: Set VM host name to k8s-master
-  hostname:
-    name: "{{ ansible_host }}"
-#    name: k8s-master   # to be used if hosts_entries is used
-
 - include_role:
-    name: docker
+    name: hosts_entries
 
 - include_role:
     name:  kubernetes/packages
+
+- include_role:
+    name: docker
 
 - name: Open ports
   firewalld:
@@ -32,3 +25,20 @@
 
 - name: Initialize kubeadm
   include_tasks: kubeadm_init.yml
+
+- name: Copy kubeadm init logs to local env for extraction
+  fetch:
+    src: /tmp/kubeadm_init.log
+    dest: generated_resources/kubeadm_init.log
+    flat: yes
+
+- name: Copy kubectl admin config
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: generated_resources/config
+    flat: yes
+
+
+
+
+

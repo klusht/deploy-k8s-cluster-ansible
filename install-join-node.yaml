@@ -1,0 +1,28 @@
+#!/usr/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted
+#./install-join-node.yaml --ask-pass -c paramiko
+
+- hosts: localhost
+  become: no
+  tasks:
+    - name: Extract the join command
+      shell: "tail -2 generated_resources/kubeadm_init.log"
+      register: join_line_extract
+    - name: Clear generated_vars
+      shell: "echo -n '' >  generated_resources/generated_vars.yml"
+    - name: Add the join line to be executed in each node
+      lineinfile:
+        path: "generated_resources/generated_vars.yml"
+        line: "join_line:  {{ join_line_extract.stdout_lines[0][:-2] }} {{ join_line_extract.stdout_lines[1].strip() }}"
+        state: present
+
+- hosts: node
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  roles:
+    - { role: kubernetes/node }
+
+
+
+

@@ -1,0 +1,26 @@
+---
+
+- debug: var=inventory_hostname
+
+- name: Set instace hostname as defined in the hosts.ini
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Init list
+  set_fact:
+    host_cluster_entries: []
+
+- name: Get hosts entries
+  set_fact:
+    host_cluster_entries: "{{ host_cluster_entries }} + [ '{{ hostvars[item].ansible_host }} {{ item }}' ]"
+  with_items:
+    - "{{ groups['clustervms'] }}"
+- debug: var=host_cluster_entries
+
+- name: Update entries in etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  with_items:
+  - "{{ host_cluster_entries }}"

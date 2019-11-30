@@ -1,0 +1,10 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted
+#./install-reset-master.yaml --ask-pass -c paramiko
+---
+- hosts: master
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  roles:
+  - { role: kubernetes/master }

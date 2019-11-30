@@ -1,9 +1,12 @@
 ---
-
 - name: Include generated kubeadm join line
   include_vars:
     dir: "{{ playbook_dir }}/generated_resources"
     files_matching: generated_vars.yml
+
+- name: Reset Kubernetes master
+  shell: "kubeadm reset --force"
+  register: reset_cluster
 
 - name: execute join command
   shell: "{{ join_line }}"

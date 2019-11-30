@@ -1,9 +1,0 @@
-#!/usr/bin/env ansible-playbook
----
-- hosts: k8s-master
-  become: yes
-  gather_facts: no
-  vars:
-    docker_latest_version: "to be changed by install docker role"
-  roles:
-  - { role: kubernetes/master }

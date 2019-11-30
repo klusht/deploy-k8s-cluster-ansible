@@ -1,5 +1,4 @@
 ---
-
 - name: Get local docker installation
   shell: "docker version | awk 'FNR == 2 { print $2 }'"
   register: get_docker_version
