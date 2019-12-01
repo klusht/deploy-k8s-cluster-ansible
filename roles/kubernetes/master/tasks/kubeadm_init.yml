@@ -52,7 +52,7 @@
 
 - name: Install Flannel network kdd
   when: pod_network=='flannel'
-  command: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml"
+  command: "kubectl apply -f {{ flannel_remote_yaml }}"
   environment:
     KUBECONFIG: "/etc/kubernetes/admin.conf"
   register: flannel_out
