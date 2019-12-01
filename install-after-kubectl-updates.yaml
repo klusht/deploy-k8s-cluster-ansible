@@ -19,6 +19,8 @@
       ignore_errors: yes
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
+
+
       command: "kubectl label nodes {{  hostvars[item].inventory_hostname }} node-role.kubernetes.io/worker=worker"
       with_items:
         - "{{ groups['node'] }}"

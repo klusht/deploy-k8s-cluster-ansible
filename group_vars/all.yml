@@ -4,7 +4,9 @@ pod_network: flannel
 #pod_network: calico
 
 calico_pod_network_cidr: "10.200.0.0/16"
-calico_version_yaml: https://docs.projectcalico.org/v3.10/manifests/calico.yaml
+calico_remote_yaml: https://docs.projectcalico.org/v3.10/manifests/calico.yaml
 
 flannel_pod_network_cidr: "10.244.0.0/16"
-flannel_remote_yaml: https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml
+flannel_remote_yaml: "https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml"
+# add the type of network interface your OS generates
+nic_interface: "ens32"
