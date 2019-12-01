@@ -1,11 +1,15 @@
 #!/usr/bin/env ansible-playbook
+
+#./optionals/optional-install-configure-local-kubectl.yaml --ask-become-pass
 ---
 
 - hosts: localhost
   connection: local
+  remote_user: root
+  gather_facts: no
   become: true
   vars:
-    ansible_python_interpreter: "/usr/bin/python2.7"
+    ansible_python_interpreter: "/usr/bin/python"
   tasks:
     - name: Add Kubernetes repository
       yum_repository:
@@ -24,6 +28,7 @@
 
 - hosts: localhost
   connection: local
+  become: no
   tasks:
     - name: Set kubectl config dir
       file:
@@ -31,4 +36,4 @@
         state: directory
 
     - name: Override generated config files
-      shell: "cp generated_resources/config {{ lookup('env','HOME') }}/.kube/config"
+      shell: "cp ../generated_resources/config {{ lookup('env','HOME') }}/.kube/config"
