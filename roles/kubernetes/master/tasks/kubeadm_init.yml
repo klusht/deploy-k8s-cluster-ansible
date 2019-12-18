@@ -4,33 +4,33 @@
   shell: "kubeadm reset --force"
   register: reset_cluster
 
-- name: fixing network communication
-  systemd:
-    name: kubelet
-    state: stopped
-- name: fixing network communication
-  systemd:
-    name: docker
-    state: stopped
-- name: fixing network communication
-  shell: "iptables --flush"
-- name: fixing flannel communication
-  shell: "iptables -tnat --flush"
-- name: fixing network communication
-  shell: "iptables -P FORWARD ACCEPT"
-- name: fixing flannel communication
-  ignore_errors: yes
-  shell: "ip link del docker0"
-- name: fixing network communication
-  systemd:
-    name: docker
-    state: reloaded
-    enabled: yes
-- name: fixing network communication
-  systemd:
-    name: kubelet
-    state: reloaded
-    enabled: yes
+#- name: fixing network communication
+#  systemd:
+#    name: kubelet
+#    state: stopped
+#- name: fixing network communication
+#  systemd:
+#    name: docker
+#    state: stopped
+#- name: fixing network communication
+#  shell: "iptables --flush"
+#- name: fixing flannel communication
+#  shell: "iptables -tnat --flush"
+#- name: fixing network communication
+#  shell: "iptables -P FORWARD ACCEPT"
+#- name: fixing flannel communication
+#  ignore_errors: yes
+#  shell: "ip link del docker0"
+#- name: fixing network communication
+#  systemd:
+#    name: docker
+#    state: reloaded
+#    enabled: yes
+#- name: fixing network communication
+#  systemd:
+#    name: kubelet
+#    state: reloaded
+#    enabled: yes
 
 - name: Init Kubernetes cluster using calico pod network
   when: reset_cluster is succeeded and pod_network=='calico'
@@ -95,13 +95,13 @@
     url: "{{ flannel_remote_yaml }}"
     dest: /tmp/flannel.yaml
     force: yes
-
-- name: insert iface
-  lineinfile:
-    dest: /tmp/flannel.yaml
-    insertafter: '        - --ip-masq'
-    line: "        - --iface={{nic_interface}}"
-    state: present
+# TODO check if firewall is not a problem anymore
+#- name: insert iface
+#  lineinfile:
+#    dest: /tmp/flannel.yaml
+#    insertafter: '        - --ip-masq'
+#    line: "        - --iface={{nic_interface}}"
+#    state: present
 
 - name: Install Flannel network
   when: pod_network=='flannel'

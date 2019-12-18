@@ -6,17 +6,23 @@
   include_role:
     name:  kubernetes/packages
 
-- name: Open ports
-  firewalld:
-    port: "{{ item }}/tcp"
-    permanent: true
-    state: enabled
-  with_items:
-    - 10250          # kubelet API
-    - 30000-32767    # Node POD service
+- name: disable firewalld
+  systemd: name=firewalld enabled=no
+- name: stop firewalld
+  systemd: name=firewalld state=stopped
 
-- name: Reload firewall
-  shell: "firewall-cmd --reload"
+# TODO check if firewall is not a problem anymore
+#- name: Open ports
+#  firewalld:
+#    port: "{{ item }}/tcp"
+#    permanent: true
+#    state: enabled
+#  with_items:
+#    - 10250          # kubelet API
+#    - 30000-32767    # Node POD service
+#
+#- name: Reload firewall
+#  shell: "firewall-cmd --reload"
 
 - name: Worker join cluster
   include_tasks: join_cluster.yml
