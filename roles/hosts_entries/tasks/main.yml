@@ -1,5 +1,4 @@
 ---
-
 - debug: var=inventory_hostname
 
 - name: Set instace hostname as defined in the hosts.ini
