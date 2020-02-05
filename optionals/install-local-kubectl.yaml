@@ -1,0 +1,38 @@
+#!/usr/bin/env ansible-playbook
+
+#./optionals/install-local-kubectl.yaml --ask-become-pass
+---
+- hosts: localhost
+  connection: local
+  remote_user: root
+  gather_facts: no
+  become: true
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Add Kubernetes repository
+      when: ansible_distribution == "CentOS"
+      yum_repository:
+        name: Kubernetes
+        description: Kubernetes Repository
+        file: kubernetes
+        baseurl: http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+        enabled: yes
+        gpgcheck: no
+
+    - name: Add Kubernetes repository
+      when: ansible_distribution == "Ubuntu"
+      apt_repository:
+        repo: http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+        state: present
+
+    - name: Uninstall kubelet kubeadm kubectl
+      ignore_errors: yes
+      package:
+        name: kubectl
+        state: absent
+
+    - name: Install kubernetes packages
+      package:
+        name: "kubectl-{{ k8s_expected_version }}"
+        update_cache: yes

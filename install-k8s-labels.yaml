@@ -1,6 +1,6 @@
 #!/bin/env ansible-playbook
-#    use the following command and pass the VM password when prompted
-#./install-after-kubectl-updates.yaml --ask-pass -c paramiko
+#    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
+#./install-k8s-labels.yaml --ask-pass -c paramiko
 
 - hosts: master
   become: yes

@@ -1,0 +1,16 @@
+#!/usr/bin/env ansible-playbook
+
+#./override-kubectl-config.yaml
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  become: no
+  tasks:
+    - name: Set kubectl config dir
+      file:
+        path: "{{ lookup('env','HOME') }}/.kube"
+        state: directory
+
+    - name: Override generated config files
+      shell: "cp ../generated_resources/config {{ lookup('env','HOME') }}/.kube/config"

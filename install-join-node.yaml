@@ -1,5 +1,5 @@
 #!/usr/bin/env ansible-playbook
-#    use the following command and pass the VM password when prompted
+#    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
 #./install-join-node.yaml --ask-pass -c paramiko
 
 - hosts: localhost

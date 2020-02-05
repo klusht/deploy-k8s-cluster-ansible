@@ -16,6 +16,12 @@
 - name: Initialize kubeadm
   include_tasks: kubeadm_init.yml
 
+- name: Add kube config on root master for kubectl dirrect access
+  lineinfile:
+    path: "/root/.bashrc"
+    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+    state: present
+
 - name: Copy kubeadm init logs to local env for extraction
   fetch:
     src: /tmp/kubeadm_init.log

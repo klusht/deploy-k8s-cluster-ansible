@@ -26,10 +26,14 @@ The current project assumes there are CentOS(7) VM's, as many actions are taken 
 ```
 ./install-reset-master.yaml --ask-pass -c paramiko
 ./install-join-node.yaml --ask-pass -c paramiko
-./install-after-kubectl-updates.yaml --ask-pass -c paramiko
+./install-k8s-labels.yaml --ask-pass -c paramiko
+```
+- You can create group_vars/clustervms.yaml file and add ansible_password: "root_password" to install everything in one go
+```
+./install-reset-master.yaml && ./install-join-node.yaml && ./install-k8s-labels.yaml && ./optionals/override-kubectl-config.yaml
 ```
 
- #### How were the playboks build
+ #### How were the playbooks build
 - They mostly fallow the steps defined in the official guides 
   - https://docs.docker.com/install/linux/docker-ce/centos/
   - https://kubernetes.io/docs/setup/independent/install-kubeadm/
@@ -37,3 +41,11 @@ The current project assumes there are CentOS(7) VM's, as many actions are taken 
   
 #### Additional optionals playbooks
 - Only if you don't have kubectl already installed you can use `./optionals/optional-install-configure-local-kubectl.yaml` to install and configure the kubectl on your local machine to point to the cluster.
+
+#### Comments
+I did not used vagrant to initialize VM on any hypervisor ( virtualbox/vmware ) as there is a clear dependency to have first network interface as NAT, 
+which affects the kubeadm cluster installation being the primary NIC and the resulting IP not being accessible from outside.
+
+
+
+ 

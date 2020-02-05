@@ -1,3 +1,8 @@
+#versions stack
+#kubeadm kubectl kubelet
+k8s_expected_version: 1.17.0-0   #Update the latest validated version of Docker to 19.03
+docker_expected_version: 19.03.0
+
 service_cidr: "10.100.0.0/12"
 
 pod_network: flannel
@@ -8,5 +13,3 @@ calico_remote_yaml: https://docs.projectcalico.org/v3.10/manifests/calico.yaml
 
 flannel_pod_network_cidr: "10.244.0.0/16"
 flannel_remote_yaml: "https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml"
-# add the type of network interface your OS generates
-nic_interface: "ens32"
