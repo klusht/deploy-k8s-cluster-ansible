@@ -1,0 +1,53 @@
+#!/bin/env ansible-playbook
+# If you are testing istio you can install this reverse proxy on master to map port 80 to get_istio_ingressgateway.stdout
+#    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
+#./optionals/reverse-proxy/install-nginx.yaml --ask-pass -c paramiko
+---
+- hosts: master
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Add epel-release repo
+      yum:
+        name: epel-release
+        state: present
+    - name: Install nginx
+      yum:
+        name: nginx
+        state: present
+
+    - name: Get istio-ingressgateway NodePort for 80
+      shell: "kubectl get svc istio-ingressgateway -n istio-system | grep -o -E '80:.{5}' | cut -f2- -d:"
+      register: get_istio_ingressgateway
+    - set_fact:
+        istio_ingressgateway_port: "{{ get_istio_ingressgateway.stdout }}"
+
+    - name: CentOS7 have issues with traffic fix conf file
+      file:
+        path: "/etc/nginx/conf.d/istio-reverse-proxy.conf"
+        state: touch
+
+#    TODO , delete the main server config in /etc/nginx/nginx.conf
+
+    - name: Setup reverse proxy in istio_ingressgateway port
+      blockinfile:
+        path: /etc/nginx/conf.d/istio-reverse-proxy.conf
+        block: |
+          server {
+            listen 80;
+            listen [::]:80;
+
+            location / {
+                    proxy_pass  http://127.0.0.1:{{ istio_ingressgateway_port }};
+                    proxy_http_version  1.1;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+          }
+    - name: Reload service nginx
+      systemd:
+        name: nginx
+        state: reloaded
+        enabled: yes

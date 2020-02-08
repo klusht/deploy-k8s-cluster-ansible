@@ -1,0 +1,10 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted if no group_var recreate-cluster-proxmox.yaml present
+#./recreate-cluster-proxmox.yaml --ask-pass -c paramiko
+---
+- hosts: proxmox
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  roles:
+  - { role: proxmox }

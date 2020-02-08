@@ -4,41 +4,6 @@
     dir: "{{ playbook_dir }}/generated_resources"
     files_matching: generated_vars.yml
 
-- name: Make sure docker and kubelet is stoped for cleanup
-  systemd:
-    name: "{{ item }}"
-    state: stopped
-    no_block: yes
-  with_items:
-    - docker
-    - kubelet
-
-- name: Remove cni fils
-  args:
-    warn: false
-  shell: |
-    rm -rf /var/lib/cni/
-    rm -rf /var/lib/kubelet/*
-    rm -rf /etc/cni/
-
-- name: Flush all iptables rules
-  shell: "iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X"
-
-- name: Make sure docker and kubelet is stoped for cleanup
-  systemd:
-    name: "{{ item }}"
-    state: started
-  with_items:
-    - docker
-    - kubelet
-
-- name: Kubeadm reset
-  shell: "kubeadm reset --force"
-  register: reset_cluster
-
-- name: Flush all iptables rules
-  shell: "iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X"
-
 - name: execute join command
   shell: "{{ join_line }}"
   register: join_cluster

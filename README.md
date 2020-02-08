@@ -24,13 +24,13 @@ The current project assumes there are CentOS(7) VM's, as many actions are taken 
 - From your remote machine ( where you have ansible ) run the scripts as described in the header of each file 
 - Install-reset-master can work as standalone cluster as it can start pods on same VM
 ```
-./install-reset-master.yaml --ask-pass -c paramiko
-./install-join-node.yaml --ask-pass -c paramiko
+./install-master.yaml --ask-pass -c paramiko
+./install-nodes-and-join.yaml  --ask-pass -c paramiko
 ./install-k8s-labels.yaml --ask-pass -c paramiko
 ```
 - You can create group_vars/clustervms.yaml file and add ansible_password: "root_password" to install everything in one go
 ```
-./install-reset-master.yaml && ./install-join-node.yaml && ./install-k8s-labels.yaml && ./optionals/override-kubectl-config.yaml
+./install-master.yaml && ./install-nodes-and-join.yaml  && ./install-k8s-labels.yaml && ./optionals/override-kubectl-config.yaml
 ```
 
  #### How were the playbooks build
@@ -46,6 +46,28 @@ The current project assumes there are CentOS(7) VM's, as many actions are taken 
 I did not used vagrant to initialize VM on any hypervisor ( virtualbox/vmware ) as there is a clear dependency to have first network interface as NAT, 
 which affects the kubeadm cluster installation being the primary NIC and the resulting IP not being accessible from outside.
 
+#### PROXMOX 
+Recently tested proxmox and I find it to be the best solution for cluster automation.
+
+It provides a rich automation interface using their qm cli and a very useful UI. 
+
+The hosts.ini files holds now the additional variables that are used to recreate the VM in proxmox
+
+##### PROXMOX setup 
+Simply create a VM ( recommend vmware workstation) and make sure that nested virtualization is enabled and allocate sufficient cores, memory and disk size
+Make a record of the IP and update the hosts ini 
+I use clones of a CentOS image personally configured. hence the proxmox playbook has this value hardcoded as 100
+To make my cluster accessible in my private network I reserved the IPs on my router, please remove flag in proxmos main if not used.
+kubeadm reset does not remove the network configs and redeploying the cluster on the same VMs will crate a lot of issues,
+   so I recommend recreating the VMs every time you wish to bootstrap a k8s cluster
+   
+```
+./recreate-cluster-proxmox.yaml && \
+sleep 20 && \
+./install-master.yaml && \
+./optionals/override-kubectl-config.yaml
 
 
- 
+./install-nodes-and-join.yaml && \
+./install-k8s-labels.yaml
+```
