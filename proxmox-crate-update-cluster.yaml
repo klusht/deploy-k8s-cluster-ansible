@@ -1,0 +1,31 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted if no group_var proxmox-crate-update-cluster.yaml present
+#./proxmox-crate-update-cluster.yaml --ask-pass -c paramiko
+---
+- hosts: proxmox
+  become: yes
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  roles:
+  - { role: proxmox }
+
+- hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+    - name: Extract the join command
+      shell: "cat generated_resources/{{ hostvars[item].inventory_hostname }}-hosts"
+      register: cat_command
+      with_items:
+        - "{{ groups['cluster'] }}"
+    - debug: var=cat_command
+
+    - name: Setup reverse proxy in istio_ingressgateway port
+      blockinfile:
+        marker: "; Managed by proxmox module "
+        path: hosts.ini
+        state: present
+        block: |
+          [master]
+          web-cluster-master-node.cluster ansible_host="192.168.0."

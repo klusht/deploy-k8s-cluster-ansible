@@ -1,30 +1,8 @@
----
-- name: Stop VMs
-  shell: |
-    export VM_ID={{ hostvars[item].vm }}
-    qm stop $VM_ID
-  with_items:
-    - "{{ groups['clustervms'] }}"
+- name: Provision master nodes for each cluster
+  include_tasks: provision-master-vms.yaml
 
-- name: ReCreate cluster
-  shell: |
-    export VM_ID={{ hostvars[item].vm }}
-    qm destroy $VM_ID --purge true
-    qm clone 100 $VM_ID \
-    --description "the cloned master-node" \
-    --name {{ hostvars[item].inventory_hostname }}
-    qm set $VM_ID \
-    --net0 virtio,bridge=vmbr0,macaddr={{ hostvars[item].mac }} \
-    --memory {{ hostvars[item].memory }} \
-    --cores {{ hostvars[item].cores }} \
-    --autostart true
-    qm set $VM_ID -onboot 1
-  with_items:
-    - "{{ groups['clustervms'] }}"
+- name: Provision worker nodes for each cluster
+  include_tasks: provision-node-pool-vms.yaml
 
-- name: Start VMs
-  shell: |
-    export VM_ID={{ hostvars[item].vm }}
-    qm start $VM_ID
-  with_items:
-    - "{{ groups['clustervms'] }}"
+- name: Extract each VM IP
+  include_tasks: extract-vms-ips.yaml

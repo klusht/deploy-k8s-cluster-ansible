@@ -1,0 +1,46 @@
+---
+- set_fact:
+    masterids: {}
+
+- name: Get master ids
+  shell: "qm list | grep {{ hostvars[item].inventory_hostname }}-master-node | awk '{print $1}'"
+  register: master_nodes_ids_command
+  with_items:
+    - "{{ groups['cluster'] }}"
+#- debug: var=master_nodes_ids_command
+
+- name: Set fact master ids
+  set_fact:
+    masterids: >
+      {{ masterids |
+         combine(
+           { item.item+'-master-node-vmid': item.stdout }
+         )
+      }}
+  with_items:
+    - "{{ master_nodes_ids_command.results }}"
+#- debug: var=masterids
+
+- name: Provision master VMs if not present
+  shell: |
+    {% set masterid=masterids.get(hostvars[item].inventory_hostname+'-master-node-vmid') -%}
+    {% if masterid=="" -%}
+      export VM_ID=$(pvesh get /cluster/nextid)
+      qm clone "{{ hostvars[item].proxmox_template_id }}" $VM_ID \
+         --description "{{ hostvars[item].inventory_hostname }}  master-node" \
+         --name {{ hostvars[item].inventory_hostname }}-master-node
+      qm set $VM_ID \
+            --net0 virtio,bridge=vmbr0,firewall=0\
+            --memory {{ hostvars[item].master_memory_MB }} \
+            --cores {{ hostvars[item].master_cpu_cores }} \
+            --autostart true \
+            --serial0 socket
+      qm set $VM_ID -onboot 1
+      qm start $VM_ID
+    {% else -%}
+      echo "Nothing to add"
+    {% endif -%}
+  register: create_masters_command
+  with_items:
+    - "{{ groups['cluster'] }}"
+#- debug: var=create_masters_command
