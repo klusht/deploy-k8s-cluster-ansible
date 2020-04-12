@@ -1,7 +1,7 @@
 ---
 - debug: var=inventory_hostname
 
-- name: Set instace hostname as defined in the hosts.ini
+- name: Set instace hostname as defined in the hosts.yaml
   hostname:
     name: "{{ inventory_hostname }}"
 
@@ -9,11 +9,12 @@
   set_fact:
     host_cluster_entries: []
 
-- name: Get hosts entries
+- name: Get hosts entries for all vms
   set_fact:
     host_cluster_entries: "{{ host_cluster_entries }} + [ '{{ hostvars[item].ansible_host }} {{ item }}' ]"
   with_items:
-    - "{{ groups['clustervms'] }}"
+    - "{{ groups['mastervms'] }}"
+    - "{{ groups['workervms'] }}"
 - debug: var=host_cluster_entries
 
 - name: Update entries in etc/hosts

@@ -1,0 +1,20 @@
+---
+- include_role:
+    name: kubernetes/system
+
+- include_role:
+    name:  kubernetes/packages
+
+- include_role:
+    name: docker
+
+- name: Get local k8s installation version
+  shell: "kubeadm config print init-defaults| grep kubernetesVersion | awk ' { print $2 }'"
+  register: get_kubeadm_init_defaults
+
+- name: Set fact kubeadm_init_k8s_version
+  set_fact:
+    kubeadm_init_k8s_version: "{{ get_kubeadm_init_defaults.stdout[1:] }}"
+
+- name: Worker join cluster
+  include_tasks: join_cluster.yaml

@@ -1,0 +1,137 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
+#./proxmox-clusters-update.yaml -i hosts.yaml --ask-pass -c paramiko
+---
+- hosts: proxmox
+  become: yes
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  roles:
+  - { role: proxmox-vm-management }
+
+- hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+    - name: Check if yq is available
+      stat:
+        path: local_resources/yq
+      register: yq_binary
+    - name: Install yq as binary if not already avaolabe on this machine
+      when: yq_binary.stat.exists == false
+      shell: "wget -O local_resources/yq https://github.com/mikefarah/yq/releases/download/3.2.1/yq_linux_amd64 && chmod +x local_resources/yq"
+
+    - name: Recreate script file
+      shell: "rm local_resources/build.sh && echo '#!/bin/bash' > local_resources/build.sh && chmod +x local_resources/build.sh "
+      ignore_errors: yes
+
+    - name: Generate inventory YAML file
+      blockinfile:
+        create: yes
+        path: local_resources/build.sh
+        block: |
+          yq() { local_resources/yq "$@"; }; export -f yq
+
+          CLUSTERS=$(cat hosts.yaml | yq r - clusters.hosts | grep -v '^ .*' | sed 's/:.*$//' )
+          NODEPOOLS=$(cat hosts.yaml | yq r - nodepools | grep -v '^ .*' | sed 's/:.*$//')
+
+          function _update_local_hosts_yaml_yq() {
+            local cluster_name=$1
+            local master_dn=$(cat local_resources/$cluster_name-hosts | grep "master" | awk '{print $2}')
+            local master_ip=$(cat local_resources/$cluster_name-hosts | grep "master" | awk '{print $1}')
+
+            # add cluster master node details
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.ansible_host $master_ip
+
+            # TODO extract this to a function
+            # add kubernetes version variable
+            local k8s_install_version=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.k8s_install_version)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.k8s_install_version "$k8s_install_version"
+
+            # add docker version variable
+            local docker_install_version=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.docker_install_version)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.docker_install_version "$docker_install_version"
+
+            # add service cidr variable
+            local service_cidr=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.service_cidr)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.service_cidr "$service_cidr"
+
+            # add networking variable
+            local service_cidr=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.service_cidr)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.service_cidr "$service_cidr"
+
+            # add pod_network variable
+            local pod_network=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.pod_network)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.pod_network "$pod_network"
+
+            # add schedule_pods_on_master variable
+            local schedule_pods_on_master=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.schedule_pods_on_master)
+            yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.schedule_pods_on_master "$schedule_pods_on_master"
+
+            local nodes_lines=$(cat local_resources/$cluster_name-hosts | grep "worker")
+            local IFS=$'\n'
+            for node_line in $nodes_lines; do
+              local worker_dn=$(echo $node_line| awk '{print $2}')
+              local worker_ip=$(echo $node_line| awk '{print $1}')
+              # add nodes under the host cluster
+              yq w -i hosts.yaml workervms.hosts.$worker_dn.ansible_host $worker_ip
+
+              # add kubectl label field
+              local worker_k8s_labels=$(cat hosts.yaml | yq r - nodepools.$cluster_name*.kubectl_labels| tr '\r\n' ' ' | sed 's+- ++g')
+              yq w -i hosts.yaml workervms.hosts.$worker_dn.kubectl_labels $worker_k8s_labels
+
+              # add kubernetes version variable
+              local k8s_install_version=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.k8s_install_version)
+              yq w -i hosts.yaml workervms.hosts.$worker_dn.kubernetes.k8s_install_version "$k8s_install_version"
+
+              # add docker version variable
+              local docker_install_version=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.docker_install_version)
+              yq w -i hosts.yaml workervms.hosts.$worker_dn.kubernetes.docker_install_version "$docker_install_version"
+            done
+          }
+
+          for cluster_name in $CLUSTERS; do
+            echo "$(_update_local_hosts_yaml_yq $cluster_name)"
+          done
+        marker: ''
+    - name: Execute script
+      shell: "local_resources/build.sh"
+      register: generate_script
+#    - debug: var=generate_script
+    - meta: refresh_inventory
+
+
+
+- hosts: mastervms
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Run install master componets role
+      include_role:
+        name: kubernetes/master
+
+
+- hosts: mastervms
+  become: no
+  tasks:
+    - name: Generate join token in {{ inventory_hostname }}
+      shell: |
+        echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
+
+    - name: Copy file with join command for
+      fetch:
+        src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
+        dest: "local_resources/{{ inventory_hostname }}-join-line.yaml"
+        flat: yes
+
+
+- hosts: workervms
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Run nodes nodes componets role
+      include_role:
+        name: kubernetes/worker

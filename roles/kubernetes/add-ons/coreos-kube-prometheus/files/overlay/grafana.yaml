@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+          operator: "Exists"
+      containers:
+        - name: grafana
+          image: grafana/grafana:6.7.2
+          env:
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_NAME
+              value: "Main Org."
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Admin"
+          volumeMounts:
+            - name: grafana-local-volume
+              mountPath: /var/lib/grafana/plugins
+      #      initContainers:
+#        - name: download-agenty-flowcharting
+#          image: busybox:1.28
+#          command: ['sh', '-c', 'wget https://grafana.com/api/plugins/agenty-flowcharting-panel/versions/0.6.1/download -P /var/lib/grafana/plugins && cd /var/lib/grafana/plugins && unzip download -d /var/lib/grafana/plugins && rm download']
+#          volumeMounts:
+#            - name: grafana
+#              mountPath: /var/lib/grafana
+#        - name: download-digrich-bubblechart-panel
+#          image: busybox:1.28
+#          command: ['sh', '-c', 'wget https://grafana.com/api/plugins/digrich-bubblechart-panel/versions/1.1.0/download -P /var/lib/grafana/plugins && cd /var/lib/grafana/plugins && unzip download -d /var/lib/grafana/plugins && rm download']
+#          volumeMounts:
+#            - name: grafana-plugins
+#              mountPath: /var/lib/grafana/plugins
+
+      volumes:
+        - name: grafana-local-volume
+          hostPath:
+            path: /var/local/k8s/volumes/grafana
+            type: DirectoryOrCreate

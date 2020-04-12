@@ -1,6 +1,0 @@
----
-- include_role:
-    name: hosts_entries
-
-- name: Install kubernetes components if not already done
-  include_tasks: install_kubernetes.yaml

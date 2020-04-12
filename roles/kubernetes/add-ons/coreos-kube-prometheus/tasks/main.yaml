@@ -1,0 +1,24 @@
+---
+- name: Check if addon is already installed
+  shell: "kubectl get deployment prometheus-operator -n monitoring 2>&1"
+  ignore_errors: yes
+  register: is_addon_present
+
+- name: Copy prometheus files
+#  when: is_addon_present.stdout.find("NotFound") != -1
+  copy:
+    src: "{{ role_path }}/files"
+    dest: /tmp/prometheus
+
+- name: Deploy prometheus
+#  when: is_addon_present.stdout.find("NotFound") != -1
+  shell: |
+    cd /tmp/prometheus/files
+    kustomize build . > prometheus-resources.yaml
+    kubectl apply -f prometheus-resources.yaml
+
+  register: apply_metric_server
+
+- name: Debug apply_metric_server
+#  when: is_addon_present.stdout.find("NotFound") != -1
+  debug: var=apply_metric_server.stdout

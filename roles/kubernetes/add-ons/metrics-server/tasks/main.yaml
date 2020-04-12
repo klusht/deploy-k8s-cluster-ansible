@@ -1,0 +1,18 @@
+---
+- name: Check if addon is already installed
+  shell: "kubectl get deployment metrics-server -n kube-system"
+  register: is_addon_present
+
+- name: Copy metric-server files
+  when: is_addon_present.stdout.find("NotFound") != -1
+  copy:
+    src: "{{ role_path }}/files"
+    dest: /tmp/metric-server
+
+- name: Deploy metric-server
+  when: is_addon_present.stdout.find("NotFound") != -1
+  shell: "kubectl apply --kustomize /tmp/metric-server/files"
+  register: apply_metric_server
+- name: Debug apply_metric_server
+  when: is_addon_present.stdout.find("NotFound") != -1
+  debug: var=apply_metric_server.stdout

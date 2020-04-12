@@ -1,0 +1,68 @@
+---
+#- include_role:
+#    name: kubernetes/system
+#
+#- include_role:
+#    name:  kubernetes/packages
+#
+#- include_role:
+#    name: docker
+#
+#- name: Get local k8s installation version
+#  shell: "kubeadm config print init-defaults| grep kubernetesVersion | awk ' { print $2 }'"
+#  register: get_kubeadm_init_defaults
+
+
+#  TODO not ok
+#- name: Set fact kubeadm_init_k8s_version
+#  set_fact:
+#    kubeadm_init_k8s_version: "{{ get_kubeadm_init_defaults.stdout[1:] }}"
+#
+#- name: kubeadm_init_k8s_version
+#  debug: var=kubeadm_init_k8s_version
+#
+#- name: Initialize kubeadm if not already initialized
+#  when: kubeadm_init_k8s_version==""
+#  include_tasks: kubeadm_init.yaml
+#
+#- name: Add kube config on root master for kubectl dirrect access
+#  lineinfile:
+#    path: "/root/.bashrc"
+#    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+#    state: present
+
+- name: Wait until kube-system calico pods are all running
+  shell: echo "result $(kubectl get pods -n kube-system | grep calico | grep -v Running 2>&1)"
+  delay: 30
+  retries: 20
+  register: kubectl_system_pods_not_running
+  until: kubectl_system_pods_not_running.stdout.find("calico") == -1
+  ignore_errors: yes
+
+- name: Install git to fetch kustomize remote references
+  ignore_errors: yes
+  package:
+    name: ['git']
+    state: present
+
+- name: Check if kustomize is available
+  stat:
+    path: /usr/local/bin/kustomize
+  register: kustomize_binary
+- name: Install kustomize as binary if not already available on this machine
+  when: kustomize_binary.stat.exists == false
+  shell: |
+    curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.5.4/kustomize_v3.5.4_linux_amd64.tar.gz --output /tmp/kustomize_v3.5.4_linux_amd64.tar.gz && \
+    tar xzf /tmp/kustomize_v3.5.4_linux_amd64.tar.gz --directory /usr/local/bin
+
+- name: Install Add ons only if kube-system pods are all running
+  when: kubectl_system_pods_not_running.stdout.find("calico") == -1
+  include_tasks: install_add_ons.yaml
+
+
+
+
+
+
+
+
