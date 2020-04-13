@@ -1,0 +1,96 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
+#  ANSIBLE_CONFIG=../../ansible.cfg ./get-admin-config-for-clusters.yaml -i ../../hosts.yaml --ask-pass -c paramiko
+
+- hosts: mastervms
+  become: yes
+  tasks:
+    - name: Extract keys
+      shell: |
+        echo "$(cat /etc/kubernetes/admin.conf | grep certificate-authority-data | xargs)" > /tmp/prometheus/user-certificate-request/admin_certs
+        echo "$(cat /etc/kubernetes/admin.conf | grep client-certificate-data | xargs)" >> /tmp/prometheus/user-certificate-request/admin_certs
+        echo "$(cat /etc/kubernetes/admin.conf | grep client-key-data | xargs)" >> /tmp/prometheus/user-certificate-request/admin_certs
+        echo "server: https://{{ hostvars[inventory_hostname].ansible_host }}:6443" >> /tmp/prometheus/user-certificate-request/admin_certs
+
+    - name: Copy the approved csr to build config
+      fetch:
+        src: "/tmp/prometheus/user-certificate-request/admin_certs"
+        dest: "{{ inventory_hostname.split('cluster',1)[0] }}cluster.csr"
+        flat: yes
+
+- hosts: localhost
+  become: no
+  gather_facts: no
+  vars:
+    script_file: build_kube_config.sh
+  tasks:
+    - name: Recreate script file
+      shell: |
+        rm {{script_file}}
+        echo '#!/bin/bash' > {{script_file}}
+        chmod +x {{script_file}}
+      ignore_errors: yes
+
+    - name: Generate inventory YAML file
+      blockinfile:
+        path: "{{script_file}}"
+        create: yes
+        block: |
+          yq() { ../yq "$@"; }; export -f yq
+
+          APPROVED_CSR=$(ls | grep '.csr$' | awk -F . '{print $1}' | tr '\r\n' ' ' )
+          arr=($APPROVED_CSR)
+          #echo $APPROVED_CSR
+
+
+          # Create config file in yaml format
+          echo "apiVersion: v1
+          kind: Config
+          preferences: {}" > config
+
+          for i in "${!arr[@]}"; do
+            echo " entry $i ${arr[$i]}"
+            CLUSTER_NAME="${arr[$i]}"
+            #  echo $CLUSTER_NAME
+
+            CLUSTER_SERVER=$(yq r "${arr[$i]}".csr server)
+            #  echo $CLUSTER_SERVER
+
+            CLUSTER_CA_DATA=$(yq r "${arr[$i]}".csr certificate-authority-data)
+            #  echo $CLUSTER_CA_DATA
+
+            CLIENT_CERT_DATA=$(yq r "${arr[$i]}".csr client-certificate-data)
+            #  echo $CLIENT_CERT_DATA
+
+            CLIENT_KEY_DATA=$(yq r "${arr[$i]}".csr client-key-data)
+            #  echo $CLIENT_KEY_DATA
+
+            # define clusters
+            yq w -i config "clusters.[+]" "cluster"
+            yq w -i config clusters["$i"].cluster.certificate-authority-data $CLUSTER_CA_DATA
+            yq w -i config clusters["$i"].cluster.server $CLUSTER_SERVER
+            yq w -i config clusters["$i"].name $CLUSTER_NAME
+
+            # define contexts
+            yq w -i config "contexts.[+]" "context"
+            yq w -i config contexts["$i"].context.cluster $CLUSTER_NAME
+            yq w -i config contexts["$i"].context.user $CLUSTER_NAME-admin
+            yq w -i config contexts["$i"].name $CLUSTER_NAME-admin@$CLUSTER_NAME
+
+
+            # define override current cotext
+            yq w -i config current-context $CLUSTER_NAME-admin@$CLUSTER_NAME
+
+            # define users
+            yq w -i config users["$i"].name  $CLUSTER_NAME-admin
+            yq w -i config users["$i"].user.client-certificate-data $CLIENT_CERT_DATA
+            yq w -i config users["$i"].user.client-key-data $CLIENT_KEY_DATA
+          done
+
+          # override this with current user .kube config
+          cp config ~/.kube/config
+        marker: ''
+
+    - name: Execute script
+      shell: "./{{script_file}}"
+      register: generate_script
