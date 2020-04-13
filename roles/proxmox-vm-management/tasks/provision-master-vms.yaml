@@ -30,7 +30,7 @@
          --description "{{ hostvars[item].inventory_hostname }}  master-node" \
          --name {{ hostvars[item].inventory_hostname }}-master-node
       qm set $VM_ID \
-            --net0 virtio,bridge=vmbr0,firewall=0\
+            --net0 virtio,bridge=vmbr0,macaddr={{ hostvars[item].master_mac }},firewall=0\
             --memory {{ hostvars[item].master_memory_MB }} \
             --cores {{ hostvars[item].master_cpu_cores }} \
             --autostart true \

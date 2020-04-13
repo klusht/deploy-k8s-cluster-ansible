@@ -1,35 +1,36 @@
 ---
-#- include_role:
-#    name: kubernetes/system
-#
-#- include_role:
-#    name:  kubernetes/packages
-#
-#- include_role:
-#    name: docker
-#
-#- name: Get local k8s installation version
-#  shell: "kubeadm config print init-defaults| grep kubernetesVersion | awk ' { print $2 }'"
-#  register: get_kubeadm_init_defaults
+- include_role:
+    name: kubernetes/system
+
+- include_role:
+    name:  kubernetes/packages
+
+- include_role:
+    name: docker
 
 
-#  TODO not ok
-#- name: Set fact kubeadm_init_k8s_version
-#  set_fact:
-#    kubeadm_init_k8s_version: "{{ get_kubeadm_init_defaults.stdout[1:] }}"
-#
-#- name: kubeadm_init_k8s_version
-#  debug: var=kubeadm_init_k8s_version
-#
-#- name: Initialize kubeadm if not already initialized
-#  when: kubeadm_init_k8s_version==""
-#  include_tasks: kubeadm_init.yaml
-#
-#- name: Add kube config on root master for kubectl dirrect access
-#  lineinfile:
-#    path: "/root/.bashrc"
-#    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
-#    state: present
+- name: Get local k8s installation version
+  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
+  register: get_kube_apiserver_docker
+- name: get_kube_apiserver_docker
+  debug: var=get_kube_apiserver_docker
+
+- name: Initialize kubeadm if not already initialized
+  when: get_kube_apiserver_docker.stdout == "no_apiserver_container"
+  include_tasks: kubeadm_init.yaml
+
+- name: Add kube config on root master for kubectl dirrect access
+  lineinfile:
+    path: "/root/.bashrc"
+    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+    state: present
+
+- name: Wait until kube-system api server is accepting requests
+  shell: echo "result $(kubectl get pods 2>&1)"
+  delay: 30
+  retries: 20
+  register: kubectl_api_call
+  until: kubectl_api_call.stdout.find("The connection") == -1
 
 - name: Wait until kube-system calico pods are all running
   shell: echo "result $(kubectl get pods -n kube-system | grep calico | grep -v Running 2>&1)"

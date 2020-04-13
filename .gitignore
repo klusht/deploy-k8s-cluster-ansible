@@ -6,4 +6,3 @@
 /group_vars/workervms.yaml
 /group_vars/proxmox.yaml
 hosts.yaml
-cluster-inventory.yaml

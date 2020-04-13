@@ -1,6 +1,6 @@
 ---
 - name: Check if addon is already installed
-  shell: "kubectl get deployment metrics-server -n kube-system"
+  shell: echo "result $(kubectl get deployment metrics-server -n kube-system 2>&1)"
   register: is_addon_present
 
 - name: Copy metric-server files

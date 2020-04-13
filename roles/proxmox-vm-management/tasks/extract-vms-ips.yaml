@@ -7,7 +7,8 @@
   register: cluster_vmids_command
   with_items:
     - "{{ groups['clusters'] }}"
-#- debug: var=cluster_vmids_command
+- name: cluster_vmids_command
+  debug: var=cluster_vmids_command
 
 - name: Set fact cluster ids
   set_fact:
@@ -19,7 +20,8 @@
       }}
   with_items:
     - "{{ cluster_vmids_command.results }}"
-#- debug: var=clusterids
+- name: clusterids
+  debug: var=clusterids
 
 - name: Get node DHCP assigned IP
   shell: |

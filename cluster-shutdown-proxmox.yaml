@@ -1,0 +1,16 @@
+#!/bin/env ansible-playbook
+#    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
+#./proxmox-clusters-update.yaml -i hosts.yaml --ask-pass -c paramiko
+---
+- hosts: proxmox
+  become: yes
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Instant kill vms
+      shell: |
+        qm list | grep cluster | column -t | awk '{print $1}' | xargs -n1 qm stop
+#    - name: Destroy clusters vms
+#      shell: |
+#        qm list | grep cluster | column -t | awk '{print $1}' | xargs -n1 qm destroy
