@@ -2,6 +2,7 @@
 #    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
 #./proxmox-clusters-update.yaml -i hosts.yaml --ask-pass -c paramiko
 ---
+
 - hosts: proxmox
   become: yes
   gather_facts: no
@@ -78,8 +79,13 @@
               yq w -i hosts.yaml workervms.hosts.$worker_dn.ansible_host $worker_ip
 
               # add kubectl label field
-              local worker_k8s_labels=$(cat hosts.yaml | yq r - nodepools.$cluster_name*.kubectl_labels| tr '\r\n' ' ' | sed 's+- ++g')
-              yq w -i hosts.yaml workervms.hosts.$worker_dn.kubectl_labels $worker_k8s_labels
+              local worker_k8s_labels=$(cat hosts.yaml | yq r - nodepools.hosts.$cluster_name*.kubectl_labels | tr '\r\n' ' ' | sed 's+- ++g' | xargs)
+              local IFS=' '
+              arr=($worker_k8s_labels)
+              for i in "${!arr[@]}"; do
+                  LABEL="${arr[$i]}"
+                  yq w -i hosts.yaml workervms.hosts.$worker_dn.kubectl_labels.["$i"] ${LABEL}
+              done
 
               # add kubernetes version variable
               local k8s_install_version=$(cat hosts.yaml | yq r - clusters.hosts.$cluster_name*.kubernetes.k8s_install_version)
@@ -99,6 +105,7 @@
       shell: "local_resources/build.sh"
       register: generate_script
 #    - debug: var=generate_script
+#   Refresh the inventory as node data has been updated
     - meta: refresh_inventory
 
 
@@ -120,7 +127,7 @@
       shell: |
         echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
 
-    - name: Copy file with join command for
+    - name: Copy file with join command
       fetch:
         src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
         dest: "local_resources/{{ inventory_hostname }}-join-line.yaml"
@@ -135,3 +142,22 @@
     - name: Run nodes nodes componets role
       include_role:
         name: kubernetes/worker
+
+
+- hosts: mastervms
+  become: no
+  tasks:
+#   TODO implement cluster specific labels
+#    - name: Add kubectl node labels
+#      ignore_errors: yes
+#      environment:
+#        KUBECONFIG: "/etc/kubernetes/admin.conf"
+#      command: "kubectl label nodes {{  hostvars[item].inventory_hostname }} {{ hostvars[item].kubectl_labels }}"
+#      with_items:
+#        - "{{ groups['clustervms'] }}"
+
+    - name: Label nodes as workers
+      ignore_errors: yes
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      shell: kubectl get nodes | grep worker | awk '{print $1}' | xargs -i kubectl label node {} node-role.kubernetes.io/worker=worker

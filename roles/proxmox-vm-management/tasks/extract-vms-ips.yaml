@@ -23,6 +23,12 @@
 - name: clusterids
   debug: var=clusterids
 
+- name: Install expect
+  become: true
+  shell: |
+    apt-get update
+    apt-get install -y expect
+
 - name: Get node DHCP assigned IP
   shell: |
     {% set cluster_vmid_list=clusterids.get(hostvars[item].inventory_hostname) -%}
@@ -53,7 +59,7 @@
   register: extract_ip_command
   with_items:
     - "{{ groups['clusters'] }}"
-#- debug: var=extract_ip_command
+- debug: var=extract_ip_command
 
 - name: Copy hosts ip files to local server
   fetch:

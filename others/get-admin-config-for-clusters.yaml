@@ -1,20 +1,24 @@
 #!/bin/env ansible-playbook
 #    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
-#  ANSIBLE_CONFIG=../../ansible.cfg ./get-admin-config-for-clusters.yaml -i ../../hosts.yaml --ask-pass -c paramiko
+#  ANSIBLE_CONFIG=../ansible.cfg ./get-admin-config-for-clusters.yaml -i ../hosts.yaml --ask-pass -c paramiko
 
 - hosts: mastervms
   become: yes
+  gather_facts: no
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
   tasks:
     - name: Extract keys
       shell: |
-        echo "$(cat /etc/kubernetes/admin.conf | grep certificate-authority-data | xargs)" > /tmp/prometheus/user-certificate-request/admin_certs
-        echo "$(cat /etc/kubernetes/admin.conf | grep client-certificate-data | xargs)" >> /tmp/prometheus/user-certificate-request/admin_certs
-        echo "$(cat /etc/kubernetes/admin.conf | grep client-key-data | xargs)" >> /tmp/prometheus/user-certificate-request/admin_certs
-        echo "server: https://{{ hostvars[inventory_hostname].ansible_host }}:6443" >> /tmp/prometheus/user-certificate-request/admin_certs
+        mkdir -p /tmp/prometheus/admin-config
+        echo "$(cat /etc/kubernetes/admin.conf | grep certificate-authority-data | xargs)" > /tmp/prometheus/admin-config/admin_certs
+        echo "$(cat /etc/kubernetes/admin.conf | grep client-certificate-data | xargs)" >> /tmp/prometheus/admin-config/admin_certs
+        echo "$(cat /etc/kubernetes/admin.conf | grep client-key-data | xargs)" >> /tmp/prometheus/admin-config/admin_certs
+        echo "server: https://{{ hostvars[inventory_hostname].ansible_host }}:6443" >> /tmp/prometheus/admin-config/admin_certs
 
     - name: Copy the approved csr to build config
       fetch:
-        src: "/tmp/prometheus/user-certificate-request/admin_certs"
+        src: "/tmp/prometheus/admin-config/admin_certs"
         dest: "{{ inventory_hostname.split('cluster',1)[0] }}cluster.csr"
         flat: yes
 
@@ -36,7 +40,7 @@
         path: "{{script_file}}"
         create: yes
         block: |
-          yq() { ../yq "$@"; }; export -f yq
+          yq() { ../local_resources/yq "$@"; }; export -f yq
 
           APPROVED_CSR=$(ls | grep '.csr$' | awk -F . '{print $1}' | tr '\r\n' ' ' )
           arr=($APPROVED_CSR)

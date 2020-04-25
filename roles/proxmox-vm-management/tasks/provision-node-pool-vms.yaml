@@ -47,4 +47,4 @@
   register: create_workers_command
   with_items:
     - "{{ groups['nodepools'] }}"
-- debug: var=create_workers_command
+- debug: var=create_workers_command.stdout_lines

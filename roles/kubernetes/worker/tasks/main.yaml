@@ -8,13 +8,14 @@
 - include_role:
     name: docker
 
-- name: Get local k8s installation version
-  shell: "kubeadm config print init-defaults| grep kubernetesVersion | awk ' { print $2 }'"
-  register: get_kubeadm_init_defaults
+- name: Check if node already part of a cluster verifying k8s containers are present
+  shell: echo "result $(docker ps | grep Up | grep k8s)"
+  register: get_docker_k8s_containers
 
-- name: Set fact kubeadm_init_k8s_version
+- name: Set fact get_docker_k8s_containers
   set_fact:
-    kubeadm_init_k8s_version: "{{ get_kubeadm_init_defaults.stdout[1:] }}"
+    docker_k8s_containers: "{{ get_docker_k8s_containers.stdout }}"
 
 - name: Worker join cluster
+  when: docker_k8s_containers.find("k8s") == -1
   include_tasks: join_cluster.yaml
