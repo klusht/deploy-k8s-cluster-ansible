@@ -1,7 +1,7 @@
 /.idea/
 *.iml
 /local_resources/
-// add ansible_password: "password" in the following files to auto provide ssh login
+# add ansible_password: "password" in the following files to auto provide ssh login
 /group_vars/mastervms.yaml
 /group_vars/workervms.yaml
 /group_vars/proxmox.yaml
