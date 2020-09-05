@@ -13,8 +13,15 @@
 - name: stop firewalld
   systemd: name=firewalld state=stopped
 
-- name: Initialize kubeadm
-  include_tasks: kubeadm_init.yml
+- name: Get local k8s installation version
+  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
+  register: get_kube_apiserver_docker
+- name: get_kube_apiserver_docker
+  debug: var=get_kube_apiserver_docker
+
+- name: Initialize kubeadm if not already initialized
+  when: get_kube_apiserver_docker.stdout == "no_apiserver_container"
+  include_tasks: kubeadm_init.yaml
 
 - name: Add kube config on root master for kubectl dirrect access
   lineinfile:
@@ -22,17 +29,6 @@
     line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
     state: present
 
-- name: Copy kubeadm init logs to local env for extraction
-  fetch:
-    src: /tmp/kubeadm_init.log
-    dest: generated_resources/kubeadm_init.log
-    flat: yes
-
-- name: Copy kubectl admin config
-  fetch:
-    src: /etc/kubernetes/admin.conf
-    dest: generated_resources/config
-    flat: yes
 
 
 

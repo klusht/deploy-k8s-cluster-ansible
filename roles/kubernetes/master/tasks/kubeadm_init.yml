@@ -25,19 +25,19 @@
 
 ################ CALICO
 
-- name: Get calico yaml to update the default 192.168.0.0 cidr
-  when: pod_network=='calico'
-  get_url:
-    url: "{{ calico_remote_yaml }}"
-    dest: /tmp/calico.yaml
-    force: yes
+#- name: Get calico yaml to update the default 192.168.0.0 cidr
+#  when: pod_network=='calico'
+#  get_url:
+#    url: "{{ calico_remote_yaml }}"
+#    dest: /tmp/calico.yaml
+#    force: yes
 
-- name: Update config with local defined IP range
-  when: pod_network=='calico'
-  lineinfile:
-    path: /tmp/calico.yaml
-    regexp: '^              value: "192.168.0.0/16"'
-    line: '              value: "{{ calico_pod_network_cidr }}"'
+#- name: Update config with local defined IP range
+#  when: pod_network=='calico'
+#  lineinfile:
+#    path: /tmp/calico.yaml
+#    regexp: '^              value: "192.168.0.0/16"'
+#    line: '              value: "{{ calico_pod_network_cidr }}"'
 
 - name: Apply Calico yaml
   when: pod_network=='calico'

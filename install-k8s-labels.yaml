@@ -1,4 +1,4 @@
-#!/bin/env ansible-playbook
+#!/usr/bin/ansible-playbook
 #    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
 #./install-k8s-labels.yaml --ask-pass -c paramiko
 
@@ -19,7 +19,6 @@
       ignore_errors: yes
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
-
       command: "kubectl label nodes {{  hostvars[item].inventory_hostname }} node-role.kubernetes.io/worker=worker"
       with_items:
         - "{{ groups['node'] }}"

@@ -1,20 +1,19 @@
-#!/usr/bin/env ansible-playbook
-#    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
+#!/usr/bin/ansible-playbook
+#    use the following command and pass the VM root password when prompted
+#  if no group_var clustervms.yaml present with ansible_ssh_pass:
 #./install-nodes-and-join.yaml --ask-pass -c paramiko
 
-- hosts: localhost
+- hosts: master
   become: no
   tasks:
-    - name: Extract the join command
-      shell: "tail -2 generated_resources/kubeadm_init.log"
-      register: join_line_extract
-    - name: Clear generated_vars
-      shell: "echo -n '' >  generated_resources/generated_vars.yml"
-    - name: Add the join line to be executed in each node
-      lineinfile:
-        path: "generated_resources/generated_vars.yml"
-        line: "join_line:  {{ join_line_extract.stdout_lines[0][:-2] }} {{ join_line_extract.stdout_lines[1].strip() }}"
-        state: present
+    - name: Generate join token in {{ inventory_hostname }}
+      shell: |
+        echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
+    - name: Copy file with join command
+      fetch:
+        src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
+        dest: "generated_resources/{{ inventory_hostname }}-join-line.yaml"
+        flat: yes
 
 - hosts: node
   become: yes

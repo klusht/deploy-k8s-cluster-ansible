@@ -1,4 +1,4 @@
-#!/bin/env ansible-playbook
+#!/usr/bin/ansible-playbook
 #    use the following command and pass the VM password when prompted if no group_var clustervms.yaml present
 #./install-master.yaml --ask-pass -c paramiko
 ---

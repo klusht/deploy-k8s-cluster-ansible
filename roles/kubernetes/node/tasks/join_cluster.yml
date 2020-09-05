@@ -2,7 +2,7 @@
 - name: Include generated kubeadm join line
   include_vars:
     dir: "{{ playbook_dir }}/generated_resources"
-    files_matching: generated_vars.yml
+    files_matching: master-join-line.yaml
 
 - name: execute join command
   shell: "{{ join_line }}"
