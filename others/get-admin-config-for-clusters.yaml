@@ -1,4 +1,4 @@
-#!/bin/env ansible-playbook
+#!/usr/bin/ansible-playbook
 #    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
 #  ANSIBLE_CONFIG=../ansible.cfg ./get-admin-config-for-clusters.yaml -i ../hosts.yaml --ask-pass -c paramiko
 

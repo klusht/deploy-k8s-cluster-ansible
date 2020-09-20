@@ -14,7 +14,7 @@
   ignore_errors: yes
 
 # TODO temporary wait for VM to boot up. Improve with other check like a listening state of a socket
-- name: Pause the process of extraction IPs until guest vms are booted up
+- name: Pause the process of IPs extraction until guest vms are booted up
   pause:
     minutes: 3
 

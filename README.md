@@ -71,3 +71,24 @@ sleep 20 && \
 ./install-nodes-and-join.yaml && \
 ./install-k8s-labels.yaml
 ```
+VM creations requires Special configuration to be able to extract the automatic IP asignment 
+TBD
+It is recommended to add the master IP address as reserved IP's in your router 
+    - when initialized the master VM, make sure you update the mac Address so it will use the reserved IP
+    
+
+
+
+
+NEW DOCS
+Create the following files with the passwords required for authentication 
+group_vars/mastervms.yaml
+    ansible_password: the_password_for_cloned_vm_image
+group_vars/proxmox.yaml
+    ansible_password: the_proxmox_vm_password
+    group_vars_proxmox_vm_password: the_vm_password
+group_vars/workervms.yaml
+    ansible_password: the_password_for_cloned_vm_image
+
+
+
