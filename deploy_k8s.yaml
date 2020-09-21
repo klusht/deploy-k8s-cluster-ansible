@@ -1,0 +1,56 @@
+#!/usr/bin/ansible-playbook
+
+#    use the following command and pass the VM password when prompted if no group_var proxmox-clusters-update.yaml present
+#./proxmox-clusters-update.yaml -i hosts.yaml --ask-pass -c paramiko
+---
+
+
+- hosts: mastervms
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Run install master componets role
+      include_role:
+        name: kubernetes/master
+
+
+- hosts: mastervms
+  become: no
+  tasks:
+    - name: Generate join token in {{ inventory_hostname }}
+      shell: |
+        echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
+    - name: Copy file with join command
+      fetch:
+        src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
+        dest: "local_resources/{{ inventory_hostname }}-join-line.yaml"
+        flat: yes
+
+
+- hosts: workervms
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python"
+  tasks:
+    - name: Run nodes nodes componets role
+      include_role:
+        name: kubernetes/worker
+
+- hosts: mastervms
+  become: no
+  tasks:
+#   TODO implement cluster specific labels
+#    - name: Add kubectl node labels
+#      ignore_errors: yes
+#      environment:
+#        KUBECONFIG: "/etc/kubernetes/admin.conf"
+#      command: "kubectl label nodes {{  hostvars[item].inventory_hostname }} {{ hostvars[item].kubectl_labels }}"
+#      with_items:
+#        - "{{ groups['clustervms'] }}"
+
+    - name: Label nodes as workers
+      ignore_errors: yes
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      shell: kubectl get nodes | grep worker | awk '{print $1}' | xargs -i kubectl label node {} node-role.kubernetes.io/worker=worker

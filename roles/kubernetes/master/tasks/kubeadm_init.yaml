@@ -7,7 +7,7 @@
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
   shell: |
     kubeadm init --service-cidr {{ hostvars[inventory_hostname].kubernetes.service_cidr }} \
-                 --pod-network-cidr {{ calico_pod_network_cidr }} \
+                 --pod-network-cidr {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }} \
                  --apiserver-advertise-address 0.0.0.0 \
                  >  /tmp/kubeadm_init.log
 
@@ -16,11 +16,11 @@
   when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
   shell: |
     kubeadm init --service-cidr {{ hostvars[inventory_hostname].kubernetes.service_cidr }} \
-                 --pod-network-cidr {{ flannel_pod_network_cidr }} \
+                 --pod-network-cidr {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }} \
                  --apiserver-advertise-address 0.0.0.0 \
                  >  /tmp/kubeadm_init.log
 
-# if you VM master is high capacity you can remove this to add pods on master as well
+# if you VM master has high capacity you can remove this to add pods on master as well
 - name: Remove taint from master to schedule pods on it
   when: hostvars[inventory_hostname].kubernetes.schedule_pods_on_master=='yes'
   environment:
@@ -31,10 +31,10 @@
 
 ################ CALICO
 
-- name: Get calico yaml to update the default 192.168.0.0 cidr
+- name: Get calico yaml to update the default pod cidr
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
   get_url:
-    url: "{{ calico_remote_yaml }}"
+    url: "https://docs.projectcalico.org/manifests/custom-resources.yaml"
     dest: /tmp/calico.yaml
     force: yes
 
@@ -42,8 +42,16 @@
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
   lineinfile:
     path: /tmp/calico.yaml
-    regexp: '^              value: "192.168.0.0/16"'
-    line: '              value: "{{ calico_pod_network_cidr }}"'
+    regexp: '^      cidr: 192.168.0.0/16"'
+    line: '      cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
+
+- name: Apply tigera-operator
+  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
+  command: "kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml"
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  register: calico_yaml
+- debug: var=calico_yaml.stdout_lines
 
 - name: Apply Calico yaml
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
@@ -52,6 +60,7 @@
     KUBECONFIG: "/etc/kubernetes/admin.conf"
   register: calico_yaml
 - debug: var=calico_yaml.stdout_lines
+
 
 ################ flannel
 
@@ -62,16 +71,9 @@
     value: 1
     state: present
 
-- name: Get flannel yaml to update the network interface
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
-  get_url:
-    url: "{{ flannel_remote_yaml }}"
-    dest: /tmp/flannel.yaml
-    force: yes
-
 - name: Install Flannel network
   when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
-  command: "kubectl apply -f /tmp/flannel.yaml"
+  command: "kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml"
   environment:
     KUBECONFIG: "/etc/kubernetes/admin.conf"
   register: flannel_out

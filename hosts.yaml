@@ -1,58 +1,33 @@
-proxmox:
+mastervms:
   hosts:
-    proxmox-pve:
-      ansible_host: 192.168.0.90
-clusters:
-  hosts:
-    web-cluster:
-      proxmox_template_id: 100
-      master_cpu_cores: 4
-      master_memory_MB: 4096
-      master_mac: 00:0C:29:97:3C:36
+    web-cluster-master-node:
+      ansible_host: 192.168.
       kubernetes:
         k8s_install_version: 1.17.2-0
         docker_install_version: 19.03.5
-        service_cidr: "10.100.0.0/12"
-        #        pod_network: flannel
+        service_cidr: 10.100.0.0/12
         pod_network: calico
         schedule_pods_on_master: no
-      kubernetes_components:
-      - metrics-server
-      - coreos-kube-prometheus
-    istio-cluster:
-      proxmox_template_id: 100
-      master_cpu_cores: 4
-      master_memory_MB: 4096
-      master_mac: 00:0C:29:97:3C:37
+        pod_network_cidr: 10.200.0.0/16
+workervms:
+  hosts:
+    web-cluster-worker-medium-0:
+      ansible_host: 192.168.
       kubernetes:
         k8s_install_version: 1.17.2-0
         docker_install_version: 19.03.5
-        service_cidr: "10.100.0.0/12"
-        #        pod_network: flannel
-        pod_network: calico
-        schedule_pods_on_master: no
-      kubernetes_components:
-      - metrics-server
-      - coreos-kube-prometheus
-      - istio-service-mesh
-nodepools:
-  hosts:
-    web-cluster-std-pool:
-      count: 3
-      proxmox_template_id: 100
-      cpu_cores: 4
-      memory_MB: 4096
-      kubectl_labels:
-      - disk=hdd
-      - some-other=value
-    istio-cluster-std-pool:
-      count: 1
-      proxmox_template_id: 100
-      cpu_cores: 4
-      memory_MB: 4096
-      kubectl_labels:
-      - disk=hdd
-      - some-other=value2
-###### end if static config
-
-
+    web-cluster-worker-medium-1:
+      ansible_host: 192.168.
+      kubernetes:
+        k8s_install_version: 1.17.2-0
+        docker_install_version: 19.03.5
+    web-cluster-worker-small-0:
+      ansible_host: 192.168.
+      kubernetes:
+        k8s_install_version: 1.17.2-0
+        docker_install_version: 19.03.5
+    web-cluster-worker-small-1:
+      ansible_host: 192.168.
+      kubernetes:
+        k8s_install_version: 1.17.2-0
+        docker_install_version: 19.03.5
