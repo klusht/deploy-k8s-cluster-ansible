@@ -1,0 +1,10 @@
+---
+- name: Include generated kubeadm join line
+  include_vars:
+    dir: "{{ playbook_dir }}/local_resources"
+    files_matching: "{{ inventory_hostname.split('cluster',1)[0] }}cluster-master-node-join-line.yaml"
+
+- name: Execute join command
+  shell: "{{ join_line }}"
+  register: join_cluster
+- debug: var=join_cluster

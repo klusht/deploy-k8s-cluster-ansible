@@ -1,0 +1,21 @@
+---
+- include_role:
+    name: kubernetes/system
+
+- include_role:
+    name:  kubernetes/packages
+
+- include_role:
+    name: docker
+
+- name: Check if node already part of a cluster verifying k8s containers are present
+  shell: echo "result $(docker ps | grep Up | grep k8s)"
+  register: get_docker_k8s_containers
+
+- name: Set fact get_docker_k8s_containers
+  set_fact:
+    docker_k8s_containers: "{{ get_docker_k8s_containers.stdout }}"
+
+- name: Worker join cluster
+  when: docker_k8s_containers.find("k8s") == -1
+  include_tasks: join_cluster.yaml

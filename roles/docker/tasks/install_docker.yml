@@ -29,15 +29,15 @@
     shell: "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
 
   - name: Install docker engine latest option (RHEL/CentOS)
-    when: docker_expected_version=='latest'
+    when: hostvars[inventory_hostname].kubernetes.docker_install_version=='latest'
     yum:
-      name: "docker-ce-{{ docker_latest_version.replace('-', '.') }}-3.el7"
+      name: "docker-ce-{{ hostvars[inventory_hostname].kubernetes.docker_install_version.replace('-', '.') }}-3.el7"
       state: present
 
-  - name: "Install docker engine specific version docker-ce-{{ docker_expected_version }}-3.el7 (RHEL/CentOS)"
-    when: docker_expected_version!='latest'
+  - name: "Install docker engine specific version docker-ce-{{ hostvars[inventory_hostname].kubernetes.docker_install_version }}-3.el7 (RHEL/CentOS)"
+    when: hostvars[inventory_hostname].kubernetes.docker_install_version!='latest'
     yum:
-      name: "docker-ce-{{ docker_expected_version }}-3.el7"
+      name: "docker-ce-{{ hostvars[inventory_hostname].kubernetes.docker_install_version }}-3.el7"
       state: present
 
   - name: Reload service docker

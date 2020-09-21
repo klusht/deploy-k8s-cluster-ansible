@@ -17,7 +17,7 @@
 
 - name: Install kubernetes packages
   package:
-    name: ['kubelet-{{ k8s_expected_version }}', 'kubeadm-{{ k8s_expected_version }}', 'kubectl-{{ k8s_expected_version }}', 'nfs-utils']
+    name: ['kubelet-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}', 'kubeadm-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version  }}', 'kubectl-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}', 'nfs-utils']
     update_cache: yes
     state: present
 

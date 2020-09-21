@@ -1,0 +1,9 @@
+---
+- include_role:
+    name: hosts_entries
+
+- name: disable firewalld
+  systemd: name=firewalld enabled=no
+
+- name: stop firewalld
+  systemd: name=firewalld state=stopped

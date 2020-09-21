@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - github.com/coreos/kube-prometheus?ref=v0.3.0
+
+patchesStrategicMerge:
+  - alertmanager-main.yaml
+  - alertmanager-main-service.yaml
+  - grafana.yaml
+  - kube-state-metrics.yaml
+  - node-exporter.yaml
+  - prometheus-adapter.yaml
+  - prometheus-k8s.yaml
+  - prometheus-operator.yaml
+  - prometheus-service.yaml
+  - prometheus-prometheus.yaml
