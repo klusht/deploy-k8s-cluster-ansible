@@ -1,9 +1,9 @@
 mastervms:
   hosts:
     web-cluster-master-node:
-      ansible_host: 192.168.
+      ansible_host: 192.168.0.100
       kubernetes:
-        k8s_install_version: 1.17.2-0
+        k8s_install_version: 1.19.2-0
         docker_install_version: 19.03.5
         service_cidr: 10.100.0.0/12
         pod_network: calico
@@ -12,22 +12,32 @@ mastervms:
 workervms:
   hosts:
     web-cluster-worker-medium-0:
-      ansible_host: 192.168.
+      ansible_host: 192.168.0.163
       kubernetes:
-        k8s_install_version: 1.17.2-0
+        k8s_install_version: 1.19.2-0
         docker_install_version: 19.03.5
     web-cluster-worker-medium-1:
-      ansible_host: 192.168.
+      ansible_host: 192.168.0.176
       kubernetes:
-        k8s_install_version: 1.17.2-0
+        k8s_install_version: 1.19.2-0
         docker_install_version: 19.03.5
     web-cluster-worker-small-0:
-      ansible_host: 192.168.
+      ansible_host: 192.168.0.162
       kubernetes:
-        k8s_install_version: 1.17.2-0
+        k8s_install_version: 1.19.2-0
         docker_install_version: 19.03.5
     web-cluster-worker-small-1:
-      ansible_host: 192.168.
+      ansible_host: 192.168.0.179
       kubernetes:
-        k8s_install_version: 1.17.2-0
+        k8s_install_version: 1.19.2-0
+        docker_install_version: 19.03.5
+    web-cluster-worker-large-0:
+      ansible_host: 192.168.0.159
+      kubernetes:
+        k8s_install_version: 1.19.2-0
+        docker_install_version: 19.03.5
+    web-cluster-worker-large-1:
+      ansible_host: 192.168.0.174
+      kubernetes:
+        k8s_install_version: 1.19.2-0
         docker_install_version: 19.03.5

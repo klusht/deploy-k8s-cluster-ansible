@@ -2,7 +2,3 @@
 - name: Install metrics-server
   include_role:
     name: kubernetes/add-ons/metrics-server
-
-- name: Install coreos-kube-prometheus
-  include_role:
-    name: kubernetes/add-ons/coreos-kube-prometheus

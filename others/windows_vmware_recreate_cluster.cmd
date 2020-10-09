@@ -56,7 +56,7 @@ set "pool_name=medium"
 SET "cores=4"
 SET "memory=4096"
 
-for /l %%x in (1, 1, 2) do (
+for /l %%x in (0, 1, 1) do (
 
 Set "node_name=node-%pool_name%-%%x"
 
@@ -95,7 +95,7 @@ set "pool_name=small"
 SET "cores=2"
 SET "memory=2048"
 
-for /l %%x in (1, 1, 2) do (
+for /l %%x in (0, 1, 1) do (
 
 Set "node_name=node-%pool_name%-%%x"
 
