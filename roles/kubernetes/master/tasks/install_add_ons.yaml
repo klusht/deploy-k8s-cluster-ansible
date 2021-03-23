@@ -1,4 +1,1 @@
 ---
-- name: Install metrics-server
-  include_role:
-    name: kubernetes/add-ons/metrics-server

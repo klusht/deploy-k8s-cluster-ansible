@@ -56,9 +56,10 @@
     curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.5.4/kustomize_v3.5.4_linux_amd64.tar.gz --output /tmp/kustomize_v3.5.4_linux_amd64.tar.gz && \
     tar xzf /tmp/kustomize_v3.5.4_linux_amd64.tar.gz --directory /usr/local/bin
 
-- name: Install Add ons only if kube-system pods are all running
-  when: kubectl_system_pods_not_running.stdout.find("calico") == -1
-  include_tasks: install_add_ons.yaml
+# TODO  metric server no stable on different updates
+#- name: Install Add ons only if kube-system pods are all running
+#  when: kubectl_system_pods_not_running.stdout.find("calico") == -1
+#  include_tasks: install_add_ons.yaml
 
 
 

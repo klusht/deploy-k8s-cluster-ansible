@@ -2,6 +2,7 @@
 
 echo "Building hosts.yaml file"
 if [ ! -f local_resources/yq ];then
+  mkdir -p local_resources
   wget -cO - https://github.com/mikefarah/yq/releases/download/3.3.2/yq_linux_amd64 > local_resources/yq && chmod +x local_resources/yq
 fi
 yq() { local_resources/yq "$@"; }; export -f yq
@@ -242,9 +243,6 @@ pod_network=calico
 pod_network_cidr="10.200.0.0/16"
 schedule_pods_on_master=no
 
-# TODO automate exclusion
-kubernetes_components=[metrics-server,coreos-kube-prometheus]
-
 
 master_dn="${cluster_name}-master-node"
 master_ip=192.168.0.100
@@ -256,14 +254,17 @@ yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.schedule_pods_on_master
 
 
 
-ips=("192.168.0.159" "192.168.0.174")
+#ips=("192.168.0.101" "192.168.0.102")
+ips=("192.168.0.101")
 create_nodes large $ips
 
-ips=("192.168.0.163" "192.168.0.176")
+#ips=("192.168.0.103" "192.168.0.104")
+ips=("192.168.0.102")
 create_nodes medium $ips
 
 
-ips=("192.168.0.162" "192.168.0.179")
+#ips=("192.168.0.105" "192.168.0.106")
+ips=("192.168.0.103")
 create_nodes small $ips
 
 
