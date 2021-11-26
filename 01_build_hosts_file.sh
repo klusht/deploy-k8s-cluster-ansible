@@ -255,17 +255,16 @@ yq w -i hosts.yaml mastervms.hosts.$master_dn.kubernetes.schedule_pods_on_master
 
 
 #ips=("192.168.0.101" "192.168.0.102")
-ips=("192.168.0.101")
-create_nodes large $ips
+##ips=("192.168.0.101")
+#create_nodes large $ips
 
-#ips=("192.168.0.103" "192.168.0.104")
-ips=("192.168.0.102")
+ips=("192.168.0.102" "192.168.0.103")
 create_nodes medium $ips
 
 
 #ips=("192.168.0.105" "192.168.0.106")
-ips=("192.168.0.103")
-create_nodes small $ips
+##ips=("192.168.0.103")
+#create_nodes small $ips
 
 
 echo "done"

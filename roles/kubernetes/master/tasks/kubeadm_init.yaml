@@ -33,25 +33,29 @@
 
 - name: Get calico yaml to update the default pod cidr
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-  get_url:
-    url: "https://docs.projectcalico.org/manifests/custom-resources.yaml"
+#  get_url:
+#    # url: "https://docs.projectcalico.org/manifests/custom-resources.yaml" OLD
+#    url: "https://docs.projectcalico.org/manifests/calico.yaml"   FAILS with CERTIFICATE_VERIFY_FAILED
+#    dest: /tmp/calico.yaml
+#    force: yes
+  ansible.builtin.copy:
+    src: roles/kubernetes/add-ons/local_calico/calico.yaml
     dest: /tmp/calico.yaml
-    force: yes
 
-- name: Update config with local defined IP range
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-  lineinfile:
-    path: /tmp/calico.yaml
-    regexp: '^      cidr: 192.168.0.0/16"'
-    line: '      cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
+#- name: Update config with local defined IP range  NOT NEEDED ( calico updates it automatically ?
+#  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
+#  lineinfile:
+#    path: /tmp/calico.yaml
+#    regexp: '^      cidr: 192.168.0.0/16"'
+#    line: '      cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
 
-- name: Apply tigera-operator
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-  command: "kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml"
-  environment:
-    KUBECONFIG: "/etc/kubernetes/admin.conf"
-  register: calico_yaml
-- debug: var=calico_yaml.stdout_lines
+#- name: Apply tigera-operator  NOT NEEDED ANYMORE from v???
+#  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
+#  command: "kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml"
+#  environment:
+#    KUBECONFIG: "/etc/kubernetes/admin.conf"
+#  register: calico_yaml
+#- debug: var=calico_yaml.stdout_lines
 
 - name: Apply Calico yaml
   when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'

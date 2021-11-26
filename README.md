@@ -44,7 +44,7 @@ run build_hosts_file.sh  to create hosts.yaml file   or skip this step if you al
   - https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
   
 #### Comments
-I did not used vagrant to initialize VM on any hypervisor ( virtualbox/vmware ) as there is a clear dependency to have first network interface as NAT, 
+I did not use vagrant to initialize VM on any hypervisor ( virtualbox/vmware ) as there is a clear dependency to have first network interface as NAT, 
 which affects the kubeadm cluster installation being the primary NIC and the resulting IP not being accessible from outside.
 
 #### PROXMOX 
