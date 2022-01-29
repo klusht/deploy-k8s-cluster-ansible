@@ -1,67 +1,89 @@
 ---
-- include_role:
+- name: Configure OS
+  include_role:
     name: kubernetes/system
 
-- include_role:
+- name: Install k8s tools
+  include_role:
     name:  kubernetes/packages
 
-- include_role:
-    name: docker
+#TODO
+#- name: install docker cri
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+#  include_role:
+#    name: docker
 
+- name: install containerd cri
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
+  include_role:
+    name: containerd
 
-- name: Get local k8s installation version
-  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
-  register: get_kube_apiserver_docker
-- name: get_kube_apiserver_docker
-  debug: var=get_kube_apiserver_docker
+#TODO
+#- name: Get local k8s installation version docker
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+#  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
+#  register: get_kube_apiserver
+
+- name: Get local k8s installation version containerd
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
+  shell: echo "no_apiserver_container$(ctr --namespace k8s.io containers ls | grep kube-apiserver)"
+  register: get_kube_apiserver
+
+- name: get_kube_apiserver
+  debug: var=get_kube_apiserver
 
 - name: Initialize kubeadm if not already initialized
-  when: get_kube_apiserver_docker.stdout == "no_apiserver_container"
+  when: get_kube_apiserver.stdout == "no_apiserver_container"
   include_tasks: kubeadm_init.yaml
 
-- name: Add kube config on root master for kubectl dirrect access
+
+# SET master kubectl
+- name: Add kube config on root master for kubectl direct access
   lineinfile:
     path: "/root/.bashrc"
-    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+    line: "export KUBECONFIG=/etc/kubernetes/admin.conf;bind 'set show-all-if-ambiguous on';bind 'set completion-ignore-case on';bind 'set completion-display-width 0'"
+    state: present
+- name: Add kube alias k on root master
+  lineinfile:
+    path: "/root/.bashrc"
+#    line: "source <(kubectl completion bash);alias k='kubectl';complete -o default -o nospace -F __start_kubectl k"
+    line: "source <(kubectl completion bash);alias k='kubectl'"
     state: present
 
 - name: Wait until kube-system api server is accepting requests
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
   shell: echo "result $(kubectl get pods 2>&1)"
-  delay: 30
-  retries: 20
+  delay: 5
+  retries: 10
   register: kubectl_api_call
   until: kubectl_api_call.stdout.find("The connection") == -1
-
-- name: Wait until kube-system calico pods are all running
-  shell: echo "result $(kubectl get pods -n kube-system | grep calico | grep -v Running 2>&1)"
-  delay: 30
-  retries: 20
-  register: kubectl_system_pods_not_running
-  until: kubectl_system_pods_not_running.stdout.find("calico") == -1
-  ignore_errors: yes
-
-- name: Install git to fetch kustomize remote references
-  ignore_errors: yes
-  package:
-    name: ['git']
-    state: present
-
-- name: Check if kustomize is available
-  stat:
-    path: /usr/local/bin/kustomize
-  register: kustomize_binary
-- name: Install kustomize as binary if not already available on this machine
-  when: kustomize_binary.stat.exists == false
-  shell: |
-    curl -L https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v3.5.4/kustomize_v3.5.4_linux_amd64.tar.gz --output /tmp/kustomize_v3.5.4_linux_amd64.tar.gz && \
-    tar xzf /tmp/kustomize_v3.5.4_linux_amd64.tar.gz --directory /usr/local/bin
-
-# TODO  metric server no stable on different updates
-#- name: Install Add ons only if kube-system pods are all running
-#  when: kubectl_system_pods_not_running.stdout.find("calico") == -1
-#  include_tasks: install_add_ons.yaml
+- debug: var=kubectl_api_call.stdout
 
 
+#Install CNI
+- name: Get calico running status
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  shell: echo "result $(kubectl get pods -n calico-system | grep calico-kube-controllers | grep Running 2>&1)"
+  register: get_calico_container
+- debug: var=get_calico_container.stdout
+
+- name: Deploy calico if not already applied
+  when: get_calico_container.stdout.find("calico-kube") == -1
+  include_tasks: deploy_calico.yaml
+
+
+
+#- name: Get OS cgroup2 support
+#  shell: "if grep  cgroup /proc/filesystems | grep -q cgroup2; then echo true; else echo false; fi"
+#  register: is_cgroup_v2_supported
+#
+##- name: TODO configure for v1 https://kubernetes.io/docs/setup/production-environment/container-runtimes/
+##  when: is_cgroup_v2_supported.stdout == "false"
+##  shell: |
+##    dnf install -y grubby &&  sudo grubby  --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
+#
 
 
 

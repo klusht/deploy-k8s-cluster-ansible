@@ -1,5 +1,5 @@
 ---
-- name: Add Kubernetes repository
+- name: Add Kubernetes repository CentOS
   when: ansible_distribution == "CentOS"
   yum_repository:
     name: Kubernetes
@@ -9,15 +9,45 @@
     enabled: yes
     gpgcheck: no
 
+
+
+
+#- name: Add Ubuntu repository key
+#  when: ansible_distribution == "Ubuntu"
+#  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -"
+
+- name: Add Kubernetes Apt signing key, uses whichever key is at the URL
+  ansible.builtin.apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add Kubernetes repository Ubuntu
+  when: ansible_distribution == "Ubuntu"
+  ansible.builtin.apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+
+
+
 - name: Uninstall kubelet kubeadm kubectl
   ignore_errors: yes
   package:
     name: ['kubelet', 'kubeadm', 'kubectl']
     state: absent
 
-- name: Install kubernetes packages
+- name: Install kubernetes packages CentOS
+  when: ansible_distribution == "CentOS"
+  # GET VERSIONS using yum list available kubelet
   package:
-    name: ['kubelet-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}', 'kubeadm-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version  }}', 'kubectl-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}', 'nfs-utils']
+    name: ['kubelet-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0', 'kubeadm-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0', 'kubectl-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0', 'nfs-utils']
+    update_cache: yes
+    state: present
+
+- name: Install kubernetes packages Ubuntu
+  when: ansible_distribution == "Ubuntu"
+  # GET VERSIONS for ubuntu apt-cache policy kubelet
+  package:
+    name: ['kubelet={{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-00', 'kubeadm={{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-00', 'kubectl={{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-00', 'nfs-kernel-server']
     update_cache: yes
     state: present
 
@@ -26,7 +56,7 @@
   selinux:
     state: disabled
 
-- name: ERROR Swap running with swap on is not supported
+- name: Disable swap. Running with swap on is not supported
   shell: "swapoff -a"
 
 - name: Remove fstab swap
@@ -37,11 +67,13 @@
     state: absent
 
 - name: CentOS7 have issues with traffic fix conf file
+  when: ansible_distribution == "CentOS"
   file:
     path: "/etc/sysctl.d/k8s.conf"
     state: touch
 
 - name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
+  when: ansible_distribution == "CentOS"
   lineinfile:
     path: /etc/sysctl.d/k8s.conf
     line: "{{ item }}"

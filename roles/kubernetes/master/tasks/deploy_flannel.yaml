@@ -1,0 +1,17 @@
+# TODO
+################# flannel
+#
+#- name: Bridged IPv4 traffic to iptables’ chains. This is a requirement for some CNI plugins to work
+#  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
+#  sysctl:
+#    name: net.bridge.bridge-nf-call-iptables
+#    value: 1
+#    state: present
+#
+#- name: Install Flannel network
+#  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
+#  command: "kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml"
+#  environment:
+#    KUBECONFIG: "/etc/kubernetes/admin.conf"
+#  register: flannel_out
+#- debug: var=flannel_out.stdout_lines

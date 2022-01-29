@@ -3,8 +3,9 @@ mastervms:
     web-cluster-master-node:
       ansible_host: 192.168.0.100
       kubernetes:
-        k8s_install_version: 1.19.2-0
-        docker_install_version: 19.03.5
+        k8s_install_version: 1.23.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.5.5-0ubuntu3~20.04.1
         service_cidr: 10.100.0.0/12
         pod_network: calico
         pod_network_cidr: 10.200.0.0/16
@@ -14,10 +15,12 @@ workervms:
     web-cluster-worker-medium-0:
       ansible_host: 192.168.0.102
       kubernetes:
-        k8s_install_version: 1.19.2-0
-        docker_install_version: 19.03.5
+        k8s_install_version: 1.23.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.5.5-0ubuntu3~20.04.1
     web-cluster-worker-medium-1:
       ansible_host: 192.168.0.103
       kubernetes:
-        k8s_install_version: 1.19.2-0
-        docker_install_version: 19.03.5
+        k8s_install_version: 1.23.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.5.5-0ubuntu3~20.04.1

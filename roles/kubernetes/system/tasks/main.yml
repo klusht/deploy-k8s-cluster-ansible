@@ -2,8 +2,18 @@
 - include_role:
     name: hosts_entries
 
-- name: disable firewalld
+- name: disable firewalld CentOS
+  when: ansible_distribution == "CentOS"
   systemd: name=firewalld enabled=no
 
-- name: stop firewalld
+- name: stop firewalld CentOS
+  when: ansible_distribution == "CentOS"
   systemd: name=firewalld state=stopped
+
+- name: disable firewall ufw Ubuntu
+  when: ansible_distribution == "Ubuntu"
+  systemd: name=ufw enabled=no
+
+- name: stop firewall ufw Ubuntu
+  when: ansible_distribution == "Ubuntu"
+  systemd: name=ufw state=stopped

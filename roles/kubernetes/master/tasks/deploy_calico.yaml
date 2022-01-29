@@ -1,0 +1,34 @@
+- name: Get calico yaml to update the default pod cidr
+  ansible.builtin.copy:
+    src: roles/kubernetes/add-ons/calico/v1.23.5/tigera-operator.yaml
+    dest: /tmp/tigera-operator.yaml
+
+- name: Get calico tigera configuration
+  ansible.builtin.copy:
+    src: roles/kubernetes/add-ons/calico/v1.23.5/tigera-custom-resources.yaml
+    dest: /tmp/tigera-custom-resources.yaml
+
+- name: Update config with local defined IP range
+  lineinfile:
+    path: /tmp/tigera-custom-resources.yaml
+    regexp: '^        cidr: 192.168.0.0/16'
+    line: '        cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
+
+- name: Apply calico manifests
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  shell: |
+    kubectl create -f /tmp/tigera-operator.yaml
+    kubectl create -f /tmp/tigera-custom-resources.yaml
+
+- name: Wait until kube-system calico pods are all running
+  environment:
+    KUBECONFIG: "/etc/kubernetes/admin.conf"
+  shell: echo "result $(kubectl get pods -n calico-system | grep calico-kube-controllers | grep Running 2>&1)"
+  delay: 10
+  retries: 5
+  register: calico_kube_controllers
+  until: calico_kube_controllers.stdout.find("calico") == -1
+- debug: var=calico_kube_controllers.stdout
+  # if fails to start you must remove taint on master node
+  #  ignore_errors: yes

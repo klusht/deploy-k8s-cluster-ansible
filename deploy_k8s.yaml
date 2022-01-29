@@ -4,19 +4,19 @@
 #./proxmox-clusters-update.yaml -i hosts.yaml --ask-pass -c paramiko
 ---
 
-
 - hosts: mastervms
   become: yes
   vars:
-    ansible_python_interpreter: "/usr/bin/python"
+    ansible_python_interpreter: "/usr/bin/python3"
   tasks:
     - name: Run install master componets role
       include_role:
         name: kubernetes/master
 
 
+
 - hosts: mastervms
-  become: no
+  become: yes
   tasks:
     - name: Generate join token in {{ inventory_hostname }}
       shell: |
@@ -28,29 +28,27 @@
         flat: yes
 
 
+
 - hosts: workervms
   become: yes
   vars:
-    ansible_python_interpreter: "/usr/bin/python"
+    ansible_python_interpreter: "/usr/bin/python3"
   tasks:
-    - name: Run nodes nodes componets role
+    - name: Run nodes componets role
       include_role:
         name: kubernetes/worker
 
-- hosts: mastervms
-  become: no
-  tasks:
-#   TODO implement cluster specific labels
-#    - name: Add kubectl node labels
-#      ignore_errors: yes
-#      environment:
-#        KUBECONFIG: "/etc/kubernetes/admin.conf"
-#      command: "kubectl label nodes {{  hostvars[item].inventory_hostname }} {{ hostvars[item].kubectl_labels }}"
-#      with_items:
-#        - "{{ groups['clustervms'] }}"
 
+
+- hosts: mastervms
+  become: yes
+  tasks:
     - name: Label nodes as workers
       ignore_errors: yes
       environment:
         KUBECONFIG: "/etc/kubernetes/admin.conf"
       shell: kubectl get nodes | grep worker | awk '{print $1}' | xargs -i kubectl label node {} node-role.kubernetes.io/worker=worker
+
+
+
+

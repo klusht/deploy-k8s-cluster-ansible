@@ -1,88 +1,29 @@
 ---
-# in case of errors on kubeadm init try resetting first
-#- name: Kube adm reset
-#  shell: kubeadm reset -f
+- name: Create kubeadm-config.yaml
+  copy:
+    dest: "kubeadm-config.yaml"
+    content: |
+      ---
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: InitConfiguration
+      nodeRegistration:
+        criSocket: "/run/containerd/containerd.sock" # containerd
+        #taints:
+        #- key: "kubeadmNode"
+        #  value: "master"
+        #  effect: "NoSchedule"
+      ---
+      kind: ClusterConfiguration
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kubernetesVersion: v{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}
+      networking:
+        serviceSubnet: {{ hostvars[inventory_hostname].kubernetes.service_cidr }}
+        podSubnet: {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}
+      ---
+      kind: KubeletConfiguration
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      cgroupDriver: systemd
 
-- name: Init Kubernetes cluster using calico pod network
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
+- name: Init Kubernetes cluster
   shell: |
-    kubeadm init --service-cidr {{ hostvars[inventory_hostname].kubernetes.service_cidr }} \
-                 --pod-network-cidr {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }} \
-                 --apiserver-advertise-address 0.0.0.0 \
-                 >  /tmp/kubeadm_init.log
-
-
-- name: Init Kubernetes cluster using flannel pod network
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
-  shell: |
-    kubeadm init --service-cidr {{ hostvars[inventory_hostname].kubernetes.service_cidr }} \
-                 --pod-network-cidr {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }} \
-                 --apiserver-advertise-address 0.0.0.0 \
-                 >  /tmp/kubeadm_init.log
-
-# if you VM master has high capacity you can remove this to add pods on master as well
-- name: Remove taint from master to schedule pods on it
-  when: hostvars[inventory_hostname].kubernetes.schedule_pods_on_master=='yes'
-  environment:
-    KUBECONFIG: "/etc/kubernetes/admin.conf"
-  command: "kubectl taint nodes --all node-role.kubernetes.io/master-"
-  register: schedule_pods_master
-- debug: var=schedule_pods_master.stdout_lines
-
-################ CALICO
-
-- name: Get calico yaml to update the default pod cidr
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-#  get_url:
-#    # url: "https://docs.projectcalico.org/manifests/custom-resources.yaml" OLD
-#    url: "https://docs.projectcalico.org/manifests/calico.yaml"   FAILS with CERTIFICATE_VERIFY_FAILED
-#    dest: /tmp/calico.yaml
-#    force: yes
-  ansible.builtin.copy:
-    src: roles/kubernetes/add-ons/local_calico/calico.yaml
-    dest: /tmp/calico.yaml
-
-#- name: Update config with local defined IP range  NOT NEEDED ( calico updates it automatically ?
-#  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-#  lineinfile:
-#    path: /tmp/calico.yaml
-#    regexp: '^      cidr: 192.168.0.0/16"'
-#    line: '      cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
-
-#- name: Apply tigera-operator  NOT NEEDED ANYMORE from v???
-#  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-#  command: "kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml"
-#  environment:
-#    KUBECONFIG: "/etc/kubernetes/admin.conf"
-#  register: calico_yaml
-#- debug: var=calico_yaml.stdout_lines
-
-- name: Apply Calico yaml
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='calico'
-  command: "kubectl apply -f /tmp/calico.yaml"
-  environment:
-    KUBECONFIG: "/etc/kubernetes/admin.conf"
-  register: calico_yaml
-- debug: var=calico_yaml.stdout_lines
-
-
-################ flannel
-
-- name: Bridged IPv4 traffic to iptables’ chains. This is a requirement for some CNI plugins to work
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
-  sysctl:
-    name: net.bridge.bridge-nf-call-iptables
-    value: 1
-    state: present
-
-- name: Install Flannel network
-  when: hostvars[inventory_hostname].kubernetes.pod_network=='flannel'
-  command: "kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml"
-  environment:
-    KUBECONFIG: "/etc/kubernetes/admin.conf"
-  register: flannel_out
-- debug: var=flannel_out.stdout_lines
-
-
-
-
+    kubeadm init --config kubeadm-config.yaml > /tmp/kubeadm_init.log
