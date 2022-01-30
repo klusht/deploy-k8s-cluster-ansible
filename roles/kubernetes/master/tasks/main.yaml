@@ -47,7 +47,7 @@
   lineinfile:
     path: "/root/.bashrc"
 #    line: "source <(kubectl completion bash);alias k='kubectl';complete -o default -o nospace -F __start_kubectl k"
-    line: "source <(kubectl completion bash);alias k='kubectl'"
+    line: "source <(kubectl completion bash);alias k='kubectl';alias ctr='ctr --namespace k8s.io'"
     state: present
 
 - name: Wait until kube-system api server is accepting requests

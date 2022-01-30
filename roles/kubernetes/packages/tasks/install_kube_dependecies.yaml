@@ -59,29 +59,31 @@
 - name: Disable swap. Running with swap on is not supported
   shell: "swapoff -a"
 
-- name: Remove fstab swap
-  mount:
-    path: swap
-    fstype: swap
-    opts: noatime
-    state: absent
 
-- name: CentOS7 have issues with traffic fix conf file
-  when: ansible_distribution == "CentOS"
-  file:
-    path: "/etc/sysctl.d/k8s.conf"
-    state: touch
+- name: Disable SWAP permanently
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
 
-- name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
-  when: ansible_distribution == "CentOS"
-  lineinfile:
-    path: /etc/sysctl.d/k8s.conf
-    line: "{{ item }}"
-    state: present
-  with_items:
-    - "net.bridge.bridge-nf-call-ip6tables = 1"
-    - "net.bridge.bridge-nf-call-iptables = 1"
-- shell: "sysctl --system"
+# TODO
+#- name: CentOS7 have issues with traffic fix conf file
+#  when: ansible_distribution == "CentOS"
+#  file:
+#    path: "/etc/sysctl.d/k8s.conf"
+#    state: touch
+
+# TODO
+#- name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
+#  when: ansible_distribution == "CentOS"
+#  lineinfile:
+#    path: /etc/sysctl.d/k8s.conf
+#    line: "{{ item }}"
+#    state: present
+#  with_items:
+#    - "net.bridge.bridge-nf-call-ip6tables = 1"
+#    - "net.bridge.bridge-nf-call-iptables = 1"
+#- shell: "sysctl --system"
 
 - name: Reload kubelet daemon
   systemd:
