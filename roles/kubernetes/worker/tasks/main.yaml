@@ -7,31 +7,39 @@
   include_role:
     name:  kubernetes/packages
 
-#TODO
-#- name: install docker cri
-#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
-#  include_role:
-#    name: docker
+- name: install docker cri
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+  include_role:
+    name: docker
 
 - name: install containerd cri
   when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
   include_role:
     name: containerd
 
-# TODO
-#- name: Check if node already part of a cluster verifying k8s containers are present
-#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
-#  shell: echo "result $(docker ps | grep Up | grep k8s)"
-#  register: get_docker_k8s_containers
+
+
+- name: Check if node already part of a cluster verifying k8s containers are present
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+  shell: echo "result $(docker ps | grep Up | grep k8s)"
+  register: get_k8s_containers_docker
+
+- name: Set fact get_k8s_containers docker
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+  set_fact:
+    get_k8s_containers: "{{ get_k8s_containers_docker.stdout }}"
+
 
 - name: Check if node already part of a cluster verifying k8s containers are present
   when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
   shell: echo "no_apiserver_container$(ctr --namespace k8s.io containers ls | grep kube)"
-  register: get_k8s_containers
+  register: get_k8s_containers_containerd
 
-- name: Set fact get_k8s_containers
+- name: Set fact get_k8s_containers containerd
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
   set_fact:
-    get_k8s_containers: "{{ get_k8s_containers.stdout }}"
+    get_k8s_containers: "{{ get_k8s_containers_containerd.stdout }}"
+- debug: var=get_k8s_containers
 
 - name: Worker join cluster
   when: get_k8s_containers.find("k8s") == -1
