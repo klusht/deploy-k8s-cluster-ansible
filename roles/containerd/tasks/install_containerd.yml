@@ -24,32 +24,11 @@
     update_cache: yes
     state: present
 
-- name: Start service httpd, if not started
-  when: ansible_distribution == "Ubuntu"
+- name: Start service containerd, if not started
   ansible.builtin.service:
     name: containerd
     state: started
 
-- name: Add the overlay module
-  community.general.modprobe:
-    name: overlay
-    state: present
-
-- name: Add the br_netfilter module
-  community.general.modprobe:
-    name: br_netfilter
-    state: present
-
-- name: Create 99-kubernetes-cri.conf. Setup required sysctl params, these persist across reboots.
-  copy:
-    dest: "/etc/sysctl.d/99-kubernetes-cri.conf"
-    content: |
-      net.bridge.bridge-nf-call-iptables  = 1
-      net.ipv4.ip_forward                 = 1
-      net.bridge.bridge-nf-call-ip6tables = 1
-
-- name: Apply sysctl params without reboot
-  shell: "sysctl --system"
 
 # TODO with this , the kubeadm fails
 #- name: Configure containerd

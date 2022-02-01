@@ -10,12 +10,6 @@
     gpgcheck: no
 
 
-
-
-#- name: Add Ubuntu repository key
-#  when: ansible_distribution == "Ubuntu"
-#  shell: "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -"
-
 - name: Add Kubernetes Apt signing key, uses whichever key is at the URL
   ansible.builtin.apt_key:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
@@ -65,25 +59,6 @@
     path: /etc/fstab
     regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
     replace: '# \1'
-
-# TODO
-#- name: CentOS7 have issues with traffic fix conf file
-#  when: ansible_distribution == "CentOS"
-#  file:
-#    path: "/etc/sysctl.d/k8s.conf"
-#    state: touch
-
-# TODO
-#- name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
-#  when: ansible_distribution == "CentOS"
-#  lineinfile:
-#    path: /etc/sysctl.d/k8s.conf
-#    line: "{{ item }}"
-#    state: present
-#  with_items:
-#    - "net.bridge.bridge-nf-call-ip6tables = 1"
-#    - "net.bridge.bridge-nf-call-iptables = 1"
-#- shell: "sysctl --system"
 
 - name: Reload kubelet daemon
   systemd:

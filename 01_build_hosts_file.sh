@@ -33,19 +33,22 @@ function create_nodes() {
 #k8s_install_version=1.19.2
 #k8s_install_version=1.20.14
 #k8s_install_version=1.21.8
-#k8s_install_version=1.22.5
-k8s_install_version=1.23.3                          # get kubectl > curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
+k8s_install_version=1.22.5
+#k8s_install_version=1.23.3                          # get kubectl > curl -LO https://dl.k8s.io/release/v1.23.0/bin/linux/amd64/kubectl
 
 
-container_runtimes_interface=containerd            # apt-cache madison containerd  OR apt-cache policy containerd
-cri_install_version=1.5.5-0ubuntu3~20.04.1
+#container_runtimes_interface=containerd            # apt-cache madison  containerd  OR apt-cache policy containerd
+#cri_install_version=1.5.5-0ubuntu3~20.04.1
 #cri_install_version=1.5.2-0ubuntu1~20.04.3
 
 
 
-# TODO not tested with current 1.20  deployments
-#container_runtimes_interface=docker
+container_runtimes_interface=docker
+cri_install_version=20.10.12  ##  apt-cache madison docker-ce   hirsute (21.04)
+#cri_install_version=20.10.12
 #docker_install_version=19.03.5
+# docker-ce | 5:20.10.12~3-0~ubuntu-bionic | https://download.docker.com/linux/ubuntu bionic/stable amd64 Packages
+# docker-ce | 5:19.03.15~3-0~ubuntu-bionic | https://download.docker.com/linux/ubuntu bionic/stable amd64 Packages
 
 
 

@@ -2,6 +2,27 @@
 - include_role:
     name: hosts_entries
 
+- name: Add the overlay module
+  community.general.modprobe:
+    name: overlay
+    state: present
+
+- name: Add the br_netfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Create 99-kubernetes-cri.conf. Setup required sysctl params, these persist across reboots.
+  copy:
+    dest: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.ipv4.ip_forward                 = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+
+- name: Apply sysctl params without reboot
+  shell: "sysctl --system"
+
 - name: disable firewalld CentOS
   when: ansible_distribution == "CentOS"
   systemd: name=firewalld enabled=no
@@ -17,3 +38,24 @@
 - name: stop firewall ufw Ubuntu
   when: ansible_distribution == "Ubuntu"
   systemd: name=ufw state=stopped
+
+
+
+# TODO
+#- name: CentOS7 have issues with traffic fix conf file
+#  when: ansible_distribution == "CentOS"
+#  file:
+#    path: "/etc/sysctl.d/k8s.conf"
+#    state: touch
+
+# TODO
+#- name: Fix issues with traffic being routed incorrectly due to iptables being bypassed
+#  when: ansible_distribution == "CentOS"
+#  lineinfile:
+#    path: /etc/sysctl.d/k8s.conf
+#    line: "{{ item }}"
+#    state: present
+#  with_items:
+#    - "net.bridge.bridge-nf-call-ip6tables = 1"
+#    - "net.bridge.bridge-nf-call-iptables = 1"
+#- shell: "sysctl --system"

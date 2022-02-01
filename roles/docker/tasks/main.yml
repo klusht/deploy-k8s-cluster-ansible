@@ -4,25 +4,10 @@
   register: get_docker_version
 - set_fact:
     docker_local_version: "{{ get_docker_version.stdout }}"
-
-- name: Get latest docker ce stable release
-  when: hostvars[inventory_hostname].kubernetes.docker_install_version=='latest'
-  shell: "curl --silent 'https://api.github.com/repos/docker/docker-ce/releases/latest' | gawk 'match($0, /\"name\": \"(.*)\",/, a) {print a[1]}'"
-  args:
-    warn: false
-  register: get_docker_latest_version
-
-- name: Set fact latest docker ce stable release
-  when: hostvars[inventory_hostname].kubernetes.docker_install_version=='latest'
-  set_fact:
-    docker_latest_version: "{{ get_docker_latest_version.stdout }}"
-
-- name: Install Docker container if latest is not installed
-  when: hostvars[inventory_hostname].kubernetes.docker_install_version=='latest' and docker_local_version!=docker_latest_version
-  include_tasks: install_docker.yml
+- debug: var=calico_kube_controllers.stdout
 
 - name: Install Docker container specific version
-  when: hostvars[inventory_hostname].kubernetes.docker_install_version!='latest' and docker_local_version!=hostvars[inventory_hostname].kubernetes.docker_install_version
+  when: docker_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version
   include_tasks: install_docker.yml
 
 
