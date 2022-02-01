@@ -13,42 +13,42 @@
       include_role:
         name: kubernetes/master
 
-#
-#
-#- hosts: mastervms
-#  become: yes
-#  tasks:
-#    - name: Generate join token in {{ inventory_hostname }}
-#      shell: |
-#        echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
-#    - name: Copy file with join command
-#      fetch:
-#        src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
-#        dest: "local_resources/{{ inventory_hostname }}-join-line.yaml"
-#        flat: yes
-#
-#
-#
-#- hosts: workervms
-#  become: yes
-#  vars:
-#    ansible_python_interpreter: "/usr/bin/python3"
-#  tasks:
-#    - name: Run nodes componets role
-#      include_role:
-#        name: kubernetes/worker
-#
-#
-#
-#- hosts: mastervms
-#  become: yes
-#  tasks:
-#    - name: Label nodes as workers
-#      ignore_errors: yes
-#      environment:
-#        KUBECONFIG: "/etc/kubernetes/admin.conf"
-#      shell: kubectl get nodes | grep worker | awk '{print $1}' | xargs -i kubectl label node {} node-role.kubernetes.io/worker=worker
-#
-#
-#
-#
+
+
+- hosts: mastervms
+  become: yes
+  tasks:
+    - name: Generate join token in {{ inventory_hostname }}
+      shell: |
+        echo "join_line: $(kubeadm token create --print-join-command)" >  /tmp/{{ inventory_hostname }}-join-line.yaml
+    - name: Copy file with join command
+      fetch:
+        src: "/tmp/{{ inventory_hostname }}-join-line.yaml"
+        dest: "local_resources/{{ inventory_hostname }}-join-line.yaml"
+        flat: yes
+
+
+
+- hosts: workervms
+  become: yes
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  tasks:
+    - name: Run nodes componets role
+      include_role:
+        name: kubernetes/worker
+
+
+
+- hosts: mastervms
+  become: yes
+  tasks:
+    - name: Label nodes as workers
+      ignore_errors: yes
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      shell: kubectl get nodes | grep worker | awk '{print $1}' | xargs -i kubectl label node {} node-role.kubernetes.io/worker=worker
+
+
+
+
