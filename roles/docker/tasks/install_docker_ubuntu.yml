@@ -1,0 +1,47 @@
+  - name: Make sure docker is stoped Ubuntu
+    systemd:
+      name: docker
+      state: stopped
+    ignore_errors: yes
+
+  - name: Uninstall docker engine old Ubuntu
+    ignore_errors: yes
+    ansible.builtin.package:
+      name: [
+        'docker',
+        'docker-engine',
+        'docker.io',
+        'containerd',
+        'runc'
+      ]
+      state: absent
+
+  - name: Add docker GPG key Ubuntu
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+  - name: Add specified repository into sources list
+    when: ansible_distribution == "Ubuntu"
+    ansible.builtin.apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu bionic stable
+      state: present
+
+  - name: Install Docker dependencies Ubuntu
+    apt:
+      pkg:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+      state: present
+      update_cache: true
+
+  - name: Install Docker Ubuntu
+    when: ansible_distribution == "Ubuntu"
+    apt:
+      pkg:
+       - "docker-ce=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
+       - "docker-ce-cli=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
+       - "containerd.io"
+      state: present
+      update_cache: true

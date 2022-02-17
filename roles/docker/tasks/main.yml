@@ -4,10 +4,13 @@
   register: get_docker_version
 - set_fact:
     docker_local_version: "{{ get_docker_version.stdout }}"
-- debug: var=calico_kube_controllers.stdout
+- debug: var=docker_local_version
 
-- name: Install Docker container specific version
-  when: docker_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version
-  include_tasks: install_docker.yml
+- name: Install Docker container specific version Ubuntu
+  when: docker_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version and ansible_distribution == "Ubuntu"
+  include_tasks: install_docker_ubuntu.yml
 
 
+- name: Install Docker container specific version CentOS
+  when: docker_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version and ansible_distribution == "CentOS"
+  include_tasks: install_docker_centos.yml

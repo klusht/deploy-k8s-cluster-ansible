@@ -1,0 +1,60 @@
+  - name: Make sure docker is stoped
+    systemd:
+      name: docker
+      state: stopped
+    ignore_errors: yes
+
+  - name: Uninstall docker engine old CentOS
+    ansible.builtin.package:
+      name: [
+        'docker',
+        'docker-client',
+        'docker-client-latest',
+        'docker-common',
+        'docker-latest',
+        'docker-latest-logrotate',
+        'docker-logrotate',
+        'docker-engine'
+        ]
+      state: absent
+    vars:
+      ansible_python_interpreter: /usr/bin/python
+
+# Official docker dock install process
+#  - name: Install docker utils CentOS
+#    yum:
+#      name: ['yum-utils', 'device-mapper-persistent-data', 'lvm2']
+#      state: present
+#  - name: Add docker repository
+#      shell: "yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+
+
+  - name: Add docker repository CentOS
+    yum_repository:
+      name: docker-ce
+      description: docker repository
+      file: docker-ce
+      baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+      enabled: yes
+      gpgkey: https://download.docker.com/linux/centos/gpg
+
+  - name: "Install docker engine specific version docker-ce"
+    # list available and replace the STRING version
+    # yum list docker-ce --showduplicates
+    # yum list docker-ce-cli --showduplicates
+    # yum list containerd.io --showduplicates TODO, check if versions are required
+    yum:
+      name:
+        - "docker-ce-{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}"
+        - "docker-ce-cli-{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}"
+        - "containerd.io"
+      state: latest
+      update_cache: true
+    vars:
+      ansible_python_interpreter: /usr/bin/python
+
+  - name: Reload service docker CentOS
+    systemd:
+      name: docker
+      state: reloaded
+      enabled: yes

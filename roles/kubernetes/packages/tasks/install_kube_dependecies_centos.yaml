@@ -1,0 +1,35 @@
+---
+- name: Add Kubernetes repository CentOS
+  when: ansible_distribution == "CentOS"
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes Repository
+    file: kubernetes
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    enabled: yes
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Uninstall kubelet kubeadm kubectl CentOS
+  when: ansible_distribution == "CentOS"
+  ignore_errors: yes
+  ansible.builtin.package:
+    name: ['kubelet', 'kubeadm', 'kubectl']
+    state: absent
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+
+- name: Install kubernetes packages CentOS
+  when: ansible_distribution == "CentOS"
+  # GET VERSIONS using yum search kubelet --showduplicates
+  ansible.builtin.package:
+    name: ['kubelet-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0.x86_64', 'kubeadm-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0.x86_64', 'kubectl-{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}-0.x86_64']
+    update_cache: yes
+    state: present
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+
+- name: Reload kubelet daemon
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    enabled: yes

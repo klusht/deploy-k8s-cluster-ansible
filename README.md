@@ -16,6 +16,7 @@ The scripts will set the CPU Cores, Memory and NIC MAC address in bridge mode, s
 Simply create one image as a base image and provide the name of the folder in 00_vmware-player_win_create_cluster.cmd
 The image should have:
 python3 installed
+libselinux-python3 installed
 a user created in sudoers called "user" ( change it in  ansible.cfg remote_user )
 
 

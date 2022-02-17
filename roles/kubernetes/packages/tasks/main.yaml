@@ -8,6 +8,10 @@
 - name: k8s_local_version
   debug: var=k8s_local_version
 
-- name: Install kube dependencies components if required
-  when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version
-  include_tasks: install_kube_dependecies.yaml
+- name: Install kube dependencies components if required Ubuntu
+  when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version and ansible_distribution == "Ubuntu"
+  include_tasks: install_kube_dependecies_ubuntu.yaml
+
+- name: Install kube dependencies components if required CentOS
+  when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version and ansible_distribution == "CentOS"
+  include_tasks: install_kube_dependecies_centos.yaml
