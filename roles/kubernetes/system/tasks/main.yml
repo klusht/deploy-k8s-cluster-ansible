@@ -1,8 +1,13 @@
 ---
 - name: Disable SELinux
+  when: ansible_distribution == "CentOS"
   ignore_errors: yes
   selinux:
     state: disabled
+
+- name: Disable app-armor
+  when: ansible_distribution == "Ubuntu"
+  shell: "aa-teardown && systemctl stop apparmor && systemctl disable apparmor "
 
 - name: Disable swap. Running with swap on is not supported
   shell: "swapoff -a"
@@ -28,11 +33,26 @@
 
 - name: Create 99-kubernetes-cri.conf. Setup required sysctl params, these persist across reboots.
   copy:
-    dest: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    dest: "/etc/sysctl.d/k8s.conf"
     content: |
       net.bridge.bridge-nf-call-iptables  = 1
       net.ipv4.ip_forward                 = 1
       net.bridge.bridge-nf-call-ip6tables = 1
+
+- name: Check if system supports cgroups v2
+  shell: grep cgroup /proc/filesystems | sed -z "s/\n/-/g" | sed -z "s/\t/-/g"
+  register: get_os_cgroups_version
+- set_fact:
+    os_cgroups_version: "{{ get_os_cgroups_version.stdout_lines }}"
+- debug: var=os_cgroups_version
+
+# TODO fix the assert
+#- name: Continue if system supports cgroup v2
+#  ansible.builtin.assert:
+#    that:
+#      - os_cgroups_version=='nodev-cgroup-nodev-cgroup2-'
+#    fail_msg: "'os_cgroups_version' must be nodev-cgroup-nodev-cgroup2-"
+#    success_msg: "'os_cgroups_version' is nodev-cgroup-nodev-cgroup2-"
 
 - name: Apply sysctl params without reboot
   shell: "sysctl --system"
@@ -52,5 +72,3 @@
 - name: stop firewall ufw Ubuntu
   when: ansible_distribution == "Ubuntu"
   systemd: name=ufw state=stopped
-
-# TODO install , 'nfs-kernel-server' Ubuntu or nfs-utils CentOS

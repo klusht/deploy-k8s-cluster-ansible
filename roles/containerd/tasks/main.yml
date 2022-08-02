@@ -1,11 +1,13 @@
 ---
 - name: Get local containerd installation
-  shell: "ctr version | grep -A 2 Server | awk 'FNR == 2 { print $2 }'"
+  shell: "ctr version | grep -A 2 Server | awk 'FNR == 2 { print $2 }' | sed 's/v//g'"
   register: get_ctr_version
 - set_fact:
     ctr_local_version: "{{ get_ctr_version.stdout }}"
 - debug: var=get_ctr_version.stdout_lines
 
 - name: Install containerd specific version if not already present
-#  when: ctr_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version
+  # TODO define assert if is already installed and fail if it is
+  #   Benefits of installing on clean VMs are clear
+  when: ctr_local_version!=hostvars[inventory_hostname].kubernetes.cri_install_version
   include_tasks: install_containerd.yml

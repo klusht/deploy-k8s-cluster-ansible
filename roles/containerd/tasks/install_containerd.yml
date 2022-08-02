@@ -1,48 +1,88 @@
-- name: Make sure containerd is stoped
-  ansible.builtin.service:
-    name: containerd
-    state: stopped
-  ignore_errors: yes
+# USE GIT release instead to avoid adoption lag
+- name: Download containerd binaries validate digest and install
+  shell: |
+    rm -rf containerd_down
+    export CRD_VERSION={{ hostvars[inventory_hostname].kubernetes.cri_install_version }}
+    mkdir -p containerd_down
+    cd containerd_down
+    wget -q https://github.com/containerd/containerd/releases/download/v$CRD_VERSION/containerd-$CRD_VERSION-linux-amd64.tar.gz
+    wget -q https://github.com/containerd/containerd/releases/download/v$CRD_VERSION/containerd-$CRD_VERSION-linux-amd64.tar.gz.sha256sum
+    sha256sum -c containerd-$CRD_VERSION-linux-amd64.tar.gz.sha256sum
+    tar Cxzvf /usr/local containerd-$CRD_VERSION-linux-amd64.tar.gz
+    wget -q -P /usr/local/lib/systemd/system https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
+    systemctl daemon-reload
+    systemctl enable --now containerd
+  register: containerd_install
+- debug: var=containerd_install
+
+- name: Installing runc
+  shell: |
+    rm -rf runc_down
+    export RUNC_VERSION={{ hostvars[inventory_hostname].kubernetes.runc_install_version }}
+    mkdir -p runc_down
+    cd runc_down
+    wget -q https://github.com/opencontainers/runc/releases/download/v$RUNC_VERSION/runc.amd64
+    wget -q https://github.com/opencontainers/runc/releases/download/v$RUNC_VERSION/runc.sha256sum
+    grep runc.amd64 runc.sha256sum > runc.amd64.sha256sum
+    sha256sum -c runc.amd64.sha256sum
+    install -m 755 runc.amd64 /usr/local/sbin/runc
+  register: runc_install
+- debug: var=runc_install
+
+- name: Installing CNI plugins
+  shell: |
+    rm -rf cni_down
+    export CNI_VERSION={{ hostvars[inventory_hostname].kubernetes.cni_plugin_install_version }}
+    mkdir -p cni_down
+    cd cni_down
+    wget -q https://github.com/containernetworking/plugins/releases/download/v$CNI_VERSION/cni-plugins-linux-amd64-v$CNI_VERSION.tgz
+    wget -q https://github.com/containernetworking/plugins/releases/download/v$CNI_VERSION/cni-plugins-linux-amd64-v$CNI_VERSION.tgz.sha256
+    sha256sum -c cni-plugins-linux-amd64-v$CNI_VERSION.tgz.sha256
+    mkdir -p /opt/cni/bin
+    tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v$CNI_VERSION.tgz
+  register: cni_install
+- debug: var=cni_install
+
+- name: Installing nerdctl Minimal
+  shell: |
+    rm -rf nerdctl_down
+    export NERDCTL_VERSION={{ hostvars[inventory_hostname].kubernetes.nerdctl_install_version }}
+    mkdir -p nerdctl_down
+    cd nerdctl_down
+    wget -q https://github.com/containerd/nerdctl/releases/download/v$NERDCTL_VERSION/nerdctl-$NERDCTL_VERSION-linux-amd64.tar.gz
+    wget -q https://github.com/containerd/nerdctl/releases/download/v0.22.2/SHA256SUMS
+    grep nerdctl-$NERDCTL_VERSION-linux-amd64.tar.gz SHA256SUMS > nerdctl-$NERDCTL_VERSION-linux-amd64.tar.gz.sha256
+    sha256sum -c nerdctl-$NERDCTL_VERSION-linux-amd64.tar.gz.sha256
+    tar Cxzvvf /usr/local/bin nerdctl-$NERDCTL_VERSION-linux-amd64.tar.gz
+  register: cni_install
+- debug: var=cni_install
 
 
-- name: Remove "containerd" package
-  when: ansible_distribution == "Ubuntu"
-  apt:
-    name: containerd
-    state: absent
+- name: Set nerdctl default namespace as k8s.io
+  lineinfile:
+    path: ~/.bashrc
+    regexp: '^alias nerdctl.*'
+    line: 'alias nerdctl="nerdctl --namespace k8s.io"'
 
-- name: Remove dependencies that are no longer required
-  when: ansible_distribution == "Ubuntu"
-  apt:
-    autoremove: yes
+- name: Set nerdctl as docker
+  lineinfile:
+    path: ~/.bashrc
+    regexp: '^alias nerdctl.*'
+    line: 'alias docker="nerdctl --namespace k8s.io"'
 
-- name: Install containerd packages Ubuntu
-  when: ansible_distribution == "Ubuntu"
-  # GET VERSIONS for ubuntu #apt-cache madison containerd
-  package:
-    name: ['containerd={{ hostvars[inventory_hostname].kubernetes.cri_install_version }}']
-    update_cache: yes
-    state: present
+
+- name: Generate config.toml.
+  shell: |
+    mkdir -p /etc/containerd/
+    containerd config default > /etc/containerd/config.toml
+
+- name: To use the systemd cgroup driver in /etc/containerd/config.toml with runc,  update config.tomle
+  lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '^            SystemdCgroup = false'
+    line: '            SystemdCgroup = true'
 
 - name: Start service containerd, if not started
   ansible.builtin.service:
     name: containerd
-    state: started
-
-
-# TODO with this , the kubeadm fails
-#- name: Configure containerd
-#  shell: "mkdir -p /etc/containerd && containerd config default | sudo tee /etc/containerd/config.toml"
-#
-#
-#- name: To use the systemd cgroup driver in /etc/containerd/config.toml with runc
-#  ansible.builtin.lineinfile:
-#    path: /etc/containerd/config.toml
-#    state: present
-#    regexp: '^    systemd_cgroup'
-#    line: '    systemd_cgroup = true'
-#
-#- name: Restart containerd
-#  ansible.builtin.service:
-#    name: containerd
-#    state: restarted
+    state: restarted

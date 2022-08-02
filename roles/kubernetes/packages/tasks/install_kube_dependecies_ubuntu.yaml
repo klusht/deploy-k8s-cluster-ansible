@@ -1,4 +1,4 @@
-- name: Add Kubernetes Apt signing key, uses whichever key is at the URL
+- name: Add Kubernetes Apt signing key, uses whichever key is at the URL Ubuntu
   when: ansible_distribution == "Ubuntu"
   ansible.builtin.apt_key:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
@@ -25,8 +25,8 @@
     update_cache: yes
     state: present
 
-#- name: Reload kubelet daemon
-#  systemd:
-#    name: kubelet
-#    daemon_reload: yes
-#    enabled: yes
+- name: Reload kubelet daemon
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    enabled: yes

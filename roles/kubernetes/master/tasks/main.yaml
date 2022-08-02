@@ -1,4 +1,15 @@
 ---
+# TODO support docker
+#- name: install docker cri
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+#  include_role:
+#    name: docker
+
+- name: install containerd cri
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
+  include_role:
+    name: containerd
+
 - name: Configure OS
   include_role:
     name: kubernetes/system
@@ -7,38 +18,33 @@
   include_role:
     name:  kubernetes/packages
 
-- name: install docker cri
-  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
-  include_role:
-    name: docker
 
-- name: install containerd cri
-  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
-  include_role:
-    name: containerd
+# TODO implement docker support
+#- name: Get local k8s installation version docker
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+#  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
+#  register: get_kube_apiserver_docker
+#- name: get_kube_apiserver_docker
+#  debug: var=get_kube_apiserver_docker
 
-- name: Get local k8s installation version docker
-  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
-  shell: echo "no_apiserver_container$(docker ps | grep k8s_kube-apiserver)"
-  register: get_kube_apiserver_docker
-- name: get_kube_apiserver_docker
-  debug: var=get_kube_apiserver_docker
 
 - name: Get local k8s installation version containerd
   when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd"
-  shell: echo "no_apiserver_container$(ctr --namespace k8s.io containers ls | grep kube-apiserver)"
+  shell: echo "no_apiserver_container$(ctr --namespace k8s.io containers ls | grep kube-apiserver )"
   register: get_kube_apiserver_containerd
 
 - name: get_kube_apiserver_containerd
   debug: var=get_kube_apiserver_containerd
 
-- name: Initialize kubeadm if not already initialized docker
-  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker" and get_kube_apiserver_docker.stdout == "no_apiserver_container"
-  include_tasks: kubeadm_init.yaml
+# TODO support docker
+#- name: Initialize kubeadm if not already initialized docker
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker" and get_kube_apiserver_docker.stdout == "no_apiserver_container"
+#  include_tasks: kubeadm_init.yaml
 
 - name: Initialize kubeadm if not already initialized containerd
   when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "containerd" and get_kube_apiserver_containerd.stdout == "no_apiserver_container"
   include_tasks: kubeadm_init.yaml
+
 
 # SET master kubectl
 - name: Add kube config on root master for kubectl direct access
@@ -78,15 +84,20 @@
 
 
 
-#- name: Get OS cgroup2 support
-#  shell: "if grep  cgroup /proc/filesystems | grep -q cgroup2; then echo true; else echo false; fi"
-#  register: is_cgroup_v2_supported
-#
-##- name: TODO configure for v1 https://kubernetes.io/docs/setup/production-environment/container-runtimes/
-##  when: is_cgroup_v2_supported.stdout == "false"
-##  shell: |
-##    dnf install -y grubby &&  sudo grubby  --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
-#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -8,7 +8,7 @@
       apiVersion: kubeadm.k8s.io/v1beta3
       kind: InitConfiguration
       nodeRegistration:
-        criSocket: "/run/containerd/containerd.sock" # ----------------- containerd
+        criSocket: "/run/containerd/containerd.sock"
         #taints:
         #- key: "kubeadmNode"
         #  value: "master"
@@ -23,33 +23,33 @@
       ---
       kind: KubeletConfiguration
       apiVersion: kubelet.config.k8s.io/v1beta1
-      cgroupDriver: systemd    # ----------------- containerd
+      cgroupDriver: systemd
 
-- name: Create kubeadm-config.yaml
-  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
-  copy:
-    dest: "kubeadm-config.yaml"
-    content: |
-      ---
-      apiVersion: kubeadm.k8s.io/v1beta3
-      kind: InitConfiguration
-      nodeRegistration:
-        criSocket: "/var/run/dockershim.sock"  # ---------------  DOCKER
-        #taints:
-        #- key: "kubeadmNode"
-        #  value: "master"
-        #  effect: "NoSchedule"
-      ---
-      kind: ClusterConfiguration
-      apiVersion: kubeadm.k8s.io/v1beta3
-      kubernetesVersion: v{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}
-      networking:
-        serviceSubnet: {{ hostvars[inventory_hostname].kubernetes.service_cidr }}
-        podSubnet: {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}
-      ---
-      kind: KubeletConfiguration
-      apiVersion: kubelet.config.k8s.io/v1beta1
-      cgroupDriver: cgroupfs   # ---------------  DOCKER
+#- name: Create kubeadm-config.yaml
+#  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+#  copy:
+#    dest: "kubeadm-config.yaml"
+#    content: |
+#      ---
+#      apiVersion: kubeadm.k8s.io/v1beta3
+#      kind: InitConfiguration
+#      nodeRegistration:
+#        criSocket: "/run/cri-dockerd.sock"  # ---------------  DOCKER
+#        #taints:
+#        #- key: "kubeadmNode"
+#        #  value: "master"
+#        #  effect: "NoSchedule"
+#      ---
+#      kind: ClusterConfiguration
+#      apiVersion: kubeadm.k8s.io/v1beta3
+#      kubernetesVersion: v{{ hostvars[inventory_hostname].kubernetes.k8s_install_version }}
+#      networking:
+#        serviceSubnet: {{ hostvars[inventory_hostname].kubernetes.service_cidr }}
+#        podSubnet: {{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}
+#      ---
+#      kind: KubeletConfiguration
+#      apiVersion: kubelet.config.k8s.io/v1beta1
+#      cgroupDriver: cgroupfs   # ---------------  DOCKER
 
 - name: Init Kubernetes cluster
   shell: |

@@ -3,9 +3,12 @@ mastervms:
     web-cluster-master-node:
       ansible_host: 192.168.0.100
       kubernetes:
-        k8s_install_version: 1.22.5
-        container_runtimes_interface: docker
-        cri_install_version: 20.10.12
+        k8s_install_version: 1.24.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.6.6
+        cni_plugin_install_version: 1.1.1
+        runc_install_version: 1.1.3
+        nerdctl_install_version: 0.22.2
         service_cidr: 10.100.0.0/12
         pod_network: calico
         pod_network_cidr: 10.200.0.0/16
@@ -15,12 +18,18 @@ workervms:
     web-cluster-worker-medium-0:
       ansible_host: 192.168.0.102
       kubernetes:
-        k8s_install_version: 1.22.5
-        container_runtimes_interface: docker
-        cri_install_version: 20.10.12
+        k8s_install_version: 1.24.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.6.6
+        cni_plugin_install_version: 1.1.1
+        runc_install_version: 1.1.3
+        nerdctl_install_version: 0.22.2
     web-cluster-worker-medium-1:
       ansible_host: 192.168.0.103
       kubernetes:
-        k8s_install_version: 1.22.5
-        container_runtimes_interface: docker
-        cri_install_version: 20.10.12
+        k8s_install_version: 1.24.3
+        container_runtimes_interface: containerd
+        cri_install_version: 1.6.6
+        cni_plugin_install_version: 1.1.1
+        runc_install_version: 1.1.3
+        nerdctl_install_version: 0.22.2

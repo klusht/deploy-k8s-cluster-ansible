@@ -1,10 +1,11 @@
 ---
 - name: Get local k8s installation version
-  shell: "kubelet --version | awk ' { print $2 }'"
+  shell: "kubelet --version | awk ' { print $2 }' | sed 's/v//g'"
   register: get_kubelet_version
 - name: Set fact k8s_local_version
   set_fact:
-    k8s_local_version: "{{ get_kubelet_version.stdout[1:] }}-0"
+#    k8s_local_version: "{{ get_kubelet_version.stdout[1:] }}-0" used when installing it via package manager
+    k8s_local_version: "{{ get_kubelet_version.stdout}}"
 - name: k8s_local_version
   debug: var=k8s_local_version
 
@@ -12,6 +13,7 @@
   when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version and ansible_distribution == "Ubuntu"
   include_tasks: install_kube_dependecies_ubuntu.yaml
 
-- name: Install kube dependencies components if required CentOS
-  when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version and ansible_distribution == "CentOS"
-  include_tasks: install_kube_dependecies_centos.yaml
+# TODO Support centos
+#- name: Install kube dependencies components if required CentOS
+#  when: k8s_local_version!=hostvars[inventory_hostname].kubernetes.k8s_install_version and ansible_distribution == "CentOS"
+#  include_tasks: install_kube_dependecies_centos.yaml

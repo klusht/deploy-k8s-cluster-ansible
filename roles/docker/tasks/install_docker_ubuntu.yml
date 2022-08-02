@@ -1,47 +1,97 @@
-  - name: Make sure docker is stoped Ubuntu
-    systemd:
-      name: docker
-      state: stopped
-    ignore_errors: yes
+- name: Make sure docker is stoped Ubuntu
+  systemd:
+    name: docker
+    state: stopped
+  ignore_errors: yes
 
-  - name: Uninstall docker engine old Ubuntu
-    ignore_errors: yes
-    ansible.builtin.package:
-      name: [
-        'docker',
-        'docker-engine',
-        'docker.io',
-        'containerd',
-        'runc'
-      ]
-      state: absent
+- name: Uninstall docker engine old Ubuntu
+  ignore_errors: yes
+  ansible.builtin.package:
+    name: [
+      'docker',
+      'docker-engine',
+      'docker.io',
+      'containerd',
+      'runc'
+    ]
+    state: absent
 
-  - name: Add docker GPG key Ubuntu
-    apt_key:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      state: present
-  - name: Add specified repository into sources list
-    when: ansible_distribution == "Ubuntu"
-    ansible.builtin.apt_repository:
-      repo: deb https://download.docker.com/linux/ubuntu bionic stable
-      state: present
+- name: Add docker GPG key Ubuntu
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+- name: Add specified repository into sources list
+  when: ansible_distribution == "Ubuntu"
+  ansible.builtin.apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu bionic stable
+    state: present
 
-  - name: Install Docker dependencies Ubuntu
-    apt:
-      pkg:
-        - ca-certificates
-        - curl
-        - gnupg
-        - lsb-release
-      state: present
-      update_cache: true
+- name: Install Docker dependencies Ubuntu
+  apt:
+    pkg:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: true
 
-  - name: Install Docker Ubuntu
-    when: ansible_distribution == "Ubuntu"
-    apt:
-      pkg:
-       - "docker-ce=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
-       - "docker-ce-cli=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
-       - "containerd.io"
-      state: present
-      update_cache: true
+- name: Install Docker Ubuntu
+  when: ansible_distribution == "Ubuntu"
+  apt:
+    pkg:
+     - "docker-ce=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
+     - "docker-ce-cli=5:{{ hostvars[inventory_hostname].kubernetes.cri_install_version }}~3-0~ubuntu-bionic"
+     - "containerd.io"
+    state: present
+    update_cache: true
+
+- name: Create cri-dockerd-install.sh
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+  copy:
+    dest: "cri-dockerd-install.sh"
+    content: |
+      #!/bin/bash
+      rm -rf ./cri-dockerd && \
+      rm -rf installer_linux && \
+      git clone --quiet https://github.com/Mirantis/cri-dockerd.git && \
+      wget https://storage.googleapis.com/golang/getgo/installer_linux && \
+      chmod +x ./installer_linux && \
+      ./installer_linux && \
+      source ~/.bash_profile && \
+      exit 0
+
+- name: Install cri-dockerd
+  when: ansible_distribution == "Ubuntu"
+  shell: "chmod +x ./cri-dockerd-install.sh && ./cri-dockerd-install.sh"
+  register: cri_dockerd_install
+- name: cri-dockerd-install debug
+  debug: var=cri_dockerd_install
+
+
+
+
+- name: Create cri-dockerd-build.sh
+  when: hostvars[inventory_hostname].kubernetes.container_runtimes_interface == "docker"
+  copy:
+    dest: "cri-dockerd-build.sh"
+    content: |
+      #!/bin/bash
+      source ~/.bash_profile && \
+      cd cri-dockerd && \
+      mkdir -p bin && \
+      go get && go build -o bin/cri-dockerd && \
+      mkdir -p /usr/local/bin && \
+      install -o root -g root -m 0755 bin/cri-dockerd /usr/local/bin/cri-dockerd && \
+      cp -a packaging/systemd/* /etc/systemd/system && \
+      sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service && \
+      systemctl daemon-reload && \
+      systemctl enable cri-docker.service && \
+      systemctl enable --now cri-docker.socket
+
+- name: Build cri-dockerd
+  when: ansible_distribution == "Ubuntu"
+  shell: "chmod +x ./cri-dockerd-build.sh && ./cri-dockerd-build.sh"
+  register: cri_dockerd_build
+- name: cri_dockerd_build debug
+  debug: var=cri_dockerd_build

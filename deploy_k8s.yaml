@@ -14,7 +14,6 @@
         name: kubernetes/master
 
 
-
 - hosts: mastervms
   become: yes
   tasks:
