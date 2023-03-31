@@ -3,7 +3,7 @@ mastervms:
     web-cluster-master-node:
       ansible_host: 192.168.0.100
       kubernetes:
-        k8s_install_version: 1.24.3
+        k8s_install_version: 1.26.3
         container_runtimes_interface: containerd
         cri_install_version: 1.6.6
         cni_plugin_install_version: 1.1.1
@@ -15,10 +15,10 @@ mastervms:
         schedule_pods_on_master: no
 workervms:
   hosts:
-    web-cluster-worker-medium-0:
+    web-cluster-worker-large-0:
       ansible_host: 192.168.0.102
       kubernetes:
-        k8s_install_version: 1.24.3
+        k8s_install_version: 1.26.3
         container_runtimes_interface: containerd
         cri_install_version: 1.6.6
         cni_plugin_install_version: 1.1.1
@@ -27,7 +27,7 @@ workervms:
     web-cluster-worker-medium-1:
       ansible_host: 192.168.0.103
       kubernetes:
-        k8s_install_version: 1.24.3
+        k8s_install_version: 1.26.3
         container_runtimes_interface: containerd
         cri_install_version: 1.6.6
         cni_plugin_install_version: 1.1.1

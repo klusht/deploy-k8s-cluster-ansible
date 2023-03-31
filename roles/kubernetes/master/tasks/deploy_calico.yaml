@@ -1,11 +1,11 @@
 - name: Get calico yaml to update the default pod cidr
   ansible.builtin.copy:
-    src: roles/kubernetes/add-ons/calico/v1.23.5/tigera-operator.yaml
+    src: roles/kubernetes/add-ons/calico/v3.25.0/tigera-operator.yaml
     dest: /tmp/tigera-operator.yaml
 
 - name: Get calico tigera configuration
   ansible.builtin.copy:
-    src: roles/kubernetes/add-ons/calico/v1.23.5/tigera-custom-resources.yaml
+    src: roles/kubernetes/add-ons/calico/v3.25.0/custom-resources.yaml
     dest: /tmp/tigera-custom-resources.yaml
 
 - name: Update config with local defined IP range
@@ -15,6 +15,7 @@
     line: '        cidr: "{{ hostvars[inventory_hostname].kubernetes.pod_network_cidr }}"'
 
 - name: Apply calico manifests
+  ignore_errors: yes
   environment:
     KUBECONFIG: "/etc/kubernetes/admin.conf"
   shell: |
