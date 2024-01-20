@@ -65,10 +65,10 @@
   when: ansible_distribution == "CentOS"
   systemd: name=firewalld state=stopped
 
-- name: disable firewall ufw Ubuntu
-  when: ansible_distribution == "Ubuntu"
-  systemd: name=ufw enabled=no
+# - name: disable firewall ufw Ubuntu
+#   when: ansible_distribution == "Ubuntu"
+#   systemd: name=ufw enabled=no
 
-- name: stop firewall ufw Ubuntu
-  when: ansible_distribution == "Ubuntu"
-  systemd: name=ufw state=stopped
+# - name: stop firewall ufw Ubuntu
+#   when: ansible_distribution == "Ubuntu"
+#   systemd: name=ufw state=stopped

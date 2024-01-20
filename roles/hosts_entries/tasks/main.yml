@@ -1,4 +1,3 @@
----
 - debug: var=inventory_hostname
 
 - name: Set instace hostname as defined in the hosts.yaml
@@ -9,23 +8,10 @@
   set_fact:
     host_cluster_entries: []
 
-- name: Get hosts entries for all vms
-  set_fact:
-    host_cluster_entries: "{{ host_cluster_entries }} + [ '{{ hostvars[item].ansible_host }} {{ item }}' ]"
-  with_items:
-    - "{{ groups['mastervms'] }}"
-    - "{{ groups['workervms'] }}"
-- debug: var=host_cluster_entries
-
-- name: Check if ansible is collecting all IPs
-  when: host_cluster_entries|length < 2
-  fail:  # update from 2.5.1
-    msg: you are using ansible version that has a bug regarding set facts, or you have only master defined
-
 - name: Update entries in etc/hosts
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/hosts
-    line: "{{ item }}"
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
     state: present
   with_items:
-  - "{{ host_cluster_entries }}"
+  - "{{ groups['all'] }}"
